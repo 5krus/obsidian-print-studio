@@ -152,3 +152,18 @@ test('the isolated preview follows theme changes without changing the document p
     assert.equal(saves,0,'App appearance must not modify print presets');
   }finally{panel.dispose();document.body.classList.remove('theme-light');}
 });
+
+test('queued viewport reports cannot replace a page number while it is being edited',async()=>{
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>source,save:async()=>{},notify:()=>{}});
+  try {
+    await tick();send({type:'ready',pages:8});
+    const input=document.querySelector<HTMLInputElement>('[aria-label="Page"]')!;
+    input.focus();input.value='3';
+    send({type:'viewport',page:1});
+    assert.equal(input.value,'3');
+    input.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Enter'}));
+    input.blur();
+    await panel.render();send({type:'ready',pages:8});
+    assert.equal(input.value,'3');
+  }finally{panel.dispose();}
+});

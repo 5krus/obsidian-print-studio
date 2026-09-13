@@ -57,7 +57,7 @@ export class StudioPanel {
     const message=frameMessage(event.data);
     if(event.source!==this.frame.contentWindow || !message || message.token!==this.token || this.disposed) return;
     if(message.type==='ready') {this.syncTheme();window.clearTimeout(this.timeout);this.status.textContent=`${message.pages} ${message.pages===1?'page':'pages'} · Ready to print`;this.printButton.disabled=false;this.exportButton.disabled=false;this.pageCount=message.pages;this.currentPage=Math.min(this.currentPage,this.pageCount);this.updateNavigation();this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');this.goToPage(this.currentPage);this.renderNotes();}
-    if(message.type==='viewport' && this.pageCount && Number.isInteger(message.page)) {this.currentPage=Math.min(this.pageCount,Math.max(1,message.page));this.updateNavigation();}
+    if(message.type==='viewport' && this.pageCount && Number.isInteger(message.page)) {this.currentPage=Math.min(this.pageCount,Math.max(1,message.page));this.updateNavigation(this.pageInput.ownerDocument.activeElement===this.pageInput);}
     if(message.type==='warnings') {this.layoutWarnings=message.warnings;this.renderNotes();}
     if(message.type==='error') {this.disablePreview();window.clearTimeout(this.timeout);this.status.textContent='Preview failed';this.host.notify('Print Studio: '+String(message.message));}
     if(message.type==='exported' && typeof message.html==='string') this.download(message.html, `${this.safeFilename(this.title)} — Print Studio.html`, 'text/html;charset=utf-8');
@@ -157,11 +157,13 @@ export class StudioPanel {
     }
     if(!this.sourceWarnings.length && !this.layoutWarnings.length)this.notes.append(this.el('span','','Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.'));
   }
-  private updateNavigation() {
+  private updateNavigation(preserveInput=false) {
     this.previousButton.disabled=this.pageCount===0 || this.currentPage<=1;
     this.nextButton.disabled=this.pageCount===0 || this.currentPage>=this.pageCount;
     this.pageInput.disabled=this.pageCount===0;this.zoomSelect.disabled=this.pageCount===0;
-    this.pageInput.value=String(this.currentPage || 1);this.pageInput.max=String(this.pageCount);
+    // A queued scroll report must not overwrite a page number the user is typing.
+    if(!preserveInput)this.pageInput.value=String(this.currentPage || 1);
+    this.pageInput.max=String(this.pageCount);
     this.pageTotal.textContent=`of ${this.pageCount}`;
   }
   private goToPage(value:number) {

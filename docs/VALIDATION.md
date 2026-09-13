@@ -2,9 +2,10 @@
 
 ## 0.3.2 source and CSS review follow-up
 
-- Local lint now covers both plugin and demo source; lint, all 32 unit tests, TypeScript and build pass.
+- Local lint now covers both plugin and demo source; lint, all 33 unit tests, TypeScript and build pass.
 - All 14 browser/PDF tests pass in Chromium, including the existing eight paper/orientation/letterhead export cases and a new removal-dialog test covering Cancel, Escape, initial focus, focus restoration, confirmation and undo.
 - The panel and sanitizer use the host's element factory: native Obsidian helpers in the plugin and standard DOM in the standalone demo. The print iframe remains sandboxed without parent DOM access.
+- A release-workflow failure exposed a timing-sensitive page-input issue. A deterministic unit regression reproduces a queued viewport report overwriting a typed page number; the input now retains uncommitted edits.
 - Browser-only lint exceptions and why they are necessary are recorded in [REVIEW_NOTES.md](REVIEW_NOTES.md).
 - Native Obsidian testing of 0.3.x, physical printing and Windows/macOS print dialogs remain unverified.
 
