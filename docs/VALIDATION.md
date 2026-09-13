@@ -1,5 +1,12 @@
 # Print Studio validation
 
+## 0.3.3 repository cleanup
+
+- The plugin build and browser test build no longer depend on the standalone demo. Test-only DOM controls and theme styles live under `tests/support`.
+- Validation covers lint, 33 unit tests, TypeScript/build, and 14 browser/PDF tests from a checkout without local demo files.
+- Production runtime and stylesheet output remain identical to 0.3.2; only release metadata changes in the installer assets.
+- The remaining sandbox DOM-helper warning is intentional; see [REVIEW_NOTES.md](REVIEW_NOTES.md).
+
 ## 0.3.2 source and CSS review follow-up
 
 - Local lint now covers both plugin and demo source; lint, all 33 unit tests, TypeScript and build pass.

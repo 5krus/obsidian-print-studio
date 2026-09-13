@@ -1,7 +1,7 @@
 import test, {after} from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {browserUI} from '../demo/ui';
+import {browserUI} from './support/ui';
 import {defaults,type Settings} from '../src/settings';
 const dom=new JSDOM('<!doctype html><body><div id="root"></div></body>',{url:'http://localhost',pretendToBeVisual:true});
 Object.assign(globalThis,{window:dom.window,HTMLInputElement:dom.window.HTMLInputElement,document:dom.window.document,FRAME_RUNTIME:'/* runtime stub */'});

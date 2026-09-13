@@ -5,3 +5,6 @@ release/
 *.zip
 test-results/
 playwright-report/
+
+# Optional local experiments are never release inputs.
+/demo/

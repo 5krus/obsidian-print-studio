@@ -3,7 +3,7 @@ import {marked} from 'marked';
 import {StudioPanel} from '../../src/panel';
 import {defaults} from '../../src/settings';
 import {prepareMarkdown} from '../../src/template';
-import {browserUI} from '../../demo/ui';
+import {browserUI} from '../support/ui';
 const query=new URLSearchParams(location.search);
 const settings=defaults();
 const preset=settings.presets[0];

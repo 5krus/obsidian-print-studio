@@ -1,11 +1,15 @@
 # Source review notes
 
-The plugin, standalone demo and print preview run in different environments. The source scanner may report browser APIs even where Obsidian APIs are unavailable.
+## Plugin UI
 
-- **Plugin UI:** `src/obsidian-ui.ts` supplies Obsidian's `createEl` helper and native components. The shared panel and HTML sanitizer receive that element factory, including for logo canvases. Plugin presets use `Plugin.loadData()` / `Plugin.saveData()`.
-- **Isolated print runtime:** `src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. It intentionally uses standard DOM APIs; Obsidian's globals are unavailable. Giving this frame access to the parent app to satisfy a DOM-helper recommendation would undermine its isolation.
-- **Standalone demo:** `demo/ui.ts` supplies browser DOM controls and a modal HTML dialog. `demo/demo.ts` stores demo preferences in origin-scoped `localStorage`; there is no vault or Obsidian `App` in this environment. These demo modules are separate build entry points and are not bundled into the plugin's `main.js`.
+`src/obsidian-ui.ts` supplies Obsidian's `createEl` helper and native components. The panel and HTML sanitizer receive that element factory, including for logo canvases. Presets use `Plugin.loadData()` / `Plugin.saveData()`.
 
-Local lint includes both `src` and `demo`. The DOM-helper exception is limited to `src/frame.ts` and `demo/ui.ts`; only the demo entry point permits the `localStorage` global. Other recommended global restrictions remain enabled. The community scanner may still report these intentional uses if it applies its own configuration.
+## Isolated print runtime
 
-Version 0.3.2 also removes the unused demo import, qualifies the demo timer with `window`, replaces browser confirmation with a keyboard-accessible dialog, corrects the removal text to mention session undo, and hides the accessible modal title without `clip-path`.
+`src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. Standard DOM creation is intentional because Obsidian's globals are unavailable. Giving this frame access to the parent app to satisfy a DOM-helper recommendation would undermine its isolation. This is the only production source file exempted from the local DOM-helper lint rule; the community scanner may still report these calls.
+
+## Automated tests
+
+`tests/support` provides browser controls and CSS for unit and Chromium/PDF tests without requiring a running Obsidian app. The test fixture contains synthetic content and is a separate build entry point, excluded from `main.js` and installer assets. These test adapters necessarily use standard browser DOM APIs.
+
+The standalone sample demo and its browser preference storage were removed from the tracked project in 0.3.3. Building, testing and releasing from a fresh checkout requires no local demo files. Earlier releases and their source history retain the code reviewed for those versions.

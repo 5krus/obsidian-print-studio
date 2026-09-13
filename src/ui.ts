@@ -1,4 +1,4 @@
-// The plugin uses Obsidian components; the standalone demo supplies a DOM adapter.
+// The plugin uses Obsidian components; automated tests supply a DOM adapter.
 export interface SettingRow {
   element: HTMLElement;
   control: HTMLElement;

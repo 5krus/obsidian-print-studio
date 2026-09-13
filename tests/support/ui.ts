@@ -1,6 +1,6 @@
-import type {ElementFactory, StudioUI} from '../src/ui';
+import type {ElementFactory, StudioUI} from '../../src/ui';
 
-// Standalone browser adapter: Obsidian's DOM helpers do not exist here.
+// Test DOM adapter: Obsidian's DOM helpers do not exist here.
 const browserElement: ElementFactory = (tag, cls = '', text = '') => {
   const node = document.createElement(tag);
   node.className = cls;
@@ -11,7 +11,7 @@ const browserElement: ElementFactory = (tag, cls = '', text = '') => {
 function append<K extends keyof HTMLElementTagNameMap>(parent:HTMLElement, tag:K, cls='', text='') {
   const node=browserElement(tag, cls, text); parent.append(node); return node;
 }
-// Small standalone counterparts for the Obsidian components used by the panel.
+// Small test counterparts for the Obsidian components used by the panel.
 // Production imports the real components from Obsidian through obsidian-ui.ts.
 export const browserUI:StudioUI = {
   createElement: browserElement,
@@ -63,11 +63,11 @@ export const browserUI:StudioUI = {
     parent.replaceChildren(svg);
   },
   confirmRemoval: name => new Promise(resolve => {
-    const dialog = append(document.body, 'dialog', 'demo-confirm');
-    dialog.setAttribute('aria-labelledby', 'demo-confirm-title');
-    append(dialog, 'h2', '', 'Remove preset').id = 'demo-confirm-title';
+    const dialog = append(document.body, 'dialog', 'test-confirm');
+    dialog.setAttribute('aria-labelledby', 'test-confirm-title');
+    append(dialog, 'h2', '', 'Remove preset').id = 'test-confirm-title';
     append(dialog, 'p', '', `Remove “${name}”? You can undo this while Print Studio stays open.`);
-    const actions = append(dialog, 'div', 'demo-confirm-actions');
+    const actions = append(dialog, 'div', 'test-confirm-actions');
     browserUI.button(actions, 'Cancel', () => dialog.close());
     browserUI.button(actions, 'Remove', () => dialog.close('remove'), {primary: true});
     dialog.addEventListener('close', () => {
