@@ -1,4 +1,5 @@
 import {Previewer} from 'pagedjs';
+import {frameCommand} from './messages';
 import {pageCss, type PrintJob} from './document';
 import {expandTemplate} from './template';
 import {paperSize} from './settings';
@@ -6,17 +7,26 @@ declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
 async function run() {
-  const source=document.createElement('div');source.className='ps-content';source.innerHTML=job.html;
+  const source=document.createElement('div');source.className='ps-content';
+  // The parent serializes only cleanMarkup output into this network-isolated frame.
+  source.append(...new DOMParser().parseFromString(job.html,'text/html').body.childNodes);
   if(job.preset.headingBreaks) {const headings=[...source.querySelectorAll('h1')];headings.slice(1).forEach(h=>h.classList.add('ps-heading-break'));}
   for(const heading of source.querySelectorAll('h2,h3,h4,h5,h6')) {
     const next=heading.nextElementSibling;
     if(next?.tagName==='P' && (next.textContent?.length ?? 0)<900){const group=document.createElement('div');group.className='ps-keep-heading';heading.before(group);group.append(heading,next);}
   }
   await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
-  source.querySelectorAll('input[type=checkbox]').forEach(input=>{const span=document.createElement('span');span.className='ps-check';span.textContent=(input as HTMLInputElement).checked?'☑':'☐';input.replaceWith(span);});
+  source.querySelectorAll('input[type=checkbox]').forEach(input=>{const span=document.createElement('span');span.className='ps-check';span.textContent=(input as HTMLInputElement).checked?'☑\uFE0E':'☐';input.replaceWith(span);});
   const previewer=new Previewer();
+  // Paged.js 0.4.3 normally waits for animation frames between pages. Electron
+  // can stop those while the window is unfocused, leaving pagination stuck.
+  // Queue tasks instead, yielding between pages without depending on repaint.
+  const scheduler=new MessageChannel();
+  const ticks:Array<()=>void>=[];
+  scheduler.port1.onmessage=()=>ticks.shift()?.();
+  previewer.chunker.q.tick=callback=>{ticks.push(callback);scheduler.port2.postMessage(null);};
   previewer.chunker.hooks.afterPageLayout.register((_element,page)=>page.removeListeners());
-  const pages=await previewer.preview(source,[{'print-studio.css':pageCss(job.preset)}],document.querySelector<HTMLElement>('#ps-output')!);
+  const pages=await previewer.preview(source,[{'print-studio.css':pageCss(job.preset)}],document.querySelector<HTMLElement>('#ps-output')!).finally(()=>{scheduler.port1.close();scheduler.port2.close();});
   // Pagination is a fixed snapshot. Screen zoom and the print media switch must
   // never trigger Paged.js's incremental reflow on the completed document.
   pages.stop(); pages.pages.forEach(page=>page.removeListeners());
@@ -36,9 +46,44 @@ async function run() {
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   document.querySelector('#ps-loading')?.remove();
-  const fit=()=>{const stack=document.querySelector<HTMLElement>('.pagedjs_pages');if(stack) stack.style.zoom=String(Math.min(1,Math.max(.2,(innerWidth-32)/(paperSize(job.preset)[0]*96/25.4+48))));};
-  fit();window.addEventListener('resize',fit);
-  window.addEventListener('message',event=>{if(event.source!==parent || event.data?.token!==job.token) return;if(event.data.type==='theme') document.documentElement.style.colorScheme=event.data.scheme==='dark'?'dark':'light';if(event.data.type==='print') {window.focus();window.print();} if(event.data.type==='export') send('exported',{html:'<!doctype html>\n'+document.documentElement.outerHTML.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'')});});
+  const stack=document.querySelector<HTMLElement>('.pagedjs_pages')!;
+  let zoom:string='fit';
+  let currentPage=1;
+  let scheduled=false;
+  const report=()=>{
+    scheduled=false;
+    let closest=Infinity;
+    all.forEach((page,index)=>{const distance=Math.abs(page.getBoundingClientRect().top-24);if(distance<closest){closest=distance;currentPage=index+1;}});
+    send('viewport',{page:currentPage});
+  };
+  const goToPage=(page:number)=>{
+    if(!Number.isFinite(page))return;
+    currentPage=Math.min(all.length,Math.max(1,Math.round(page)));
+    all[currentPage-1].scrollIntoView({block:'start'});
+    send('viewport',{page:currentPage});
+  };
+  const applyZoom=()=>{
+    const scale=zoom==='fit'?Math.min(1,Math.max(.1,(innerWidth-24)/(paperSize(job.preset)[0]*96/25.4+48))):Number(zoom);
+    stack.style.zoom=String(scale);
+    if(currentPage>1)goToPage(currentPage);
+  };
+  applyZoom();window.addEventListener('resize',applyZoom);
+  window.addEventListener('scroll',()=>{if(!scheduled){scheduled=true;window.requestAnimationFrame(report);}},{passive:true});
+  window.addEventListener('message',(event:MessageEvent<unknown>)=>{
+    const message=frameCommand(event.data);
+    if(event.source!==parent || !message || message.token!==job.token)return;
+    if(message.type==='theme')document.documentElement.style.colorScheme=message.scheme==='dark'?'dark':'light';
+    if(message.type==='page')goToPage(Number(message.page));
+    if(message.type==='zoom' && ['fit','0.5','0.75','1','1.25','1.5','2'].includes(message.value)){zoom=message.value;applyZoom();}
+    if(message.type==='print'){window.focus();window.print();}
+    if(message.type==='export'){
+      // Export at actual size, regardless of the current preview magnification.
+      const clone=document.documentElement.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('script').forEach(script=>script.remove());
+      clone.querySelector<HTMLElement>('.pagedjs_pages')!.style.removeProperty('zoom');
+      send('exported',{html:'<!doctype html>\n'+clone.outerHTML});
+    }
+  });
   send('ready',{pages:pages.total});
 }
-run().catch(error=>{document.querySelector('#ps-loading')!.textContent='Could not paginate this document.';send('error',{message:error instanceof Error?error.message:String(error)});});
+run().catch(error=>{const loading=document.querySelector('#ps-loading');if(loading)loading.textContent='Could not paginate this document.';send('error',{message:error instanceof Error?error.message:String(error)});});

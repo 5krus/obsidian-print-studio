@@ -113,3 +113,11 @@
   .ps-sidebar { width: 100%; max-height: 42%; flex-shrink: 0; overflow-y: auto; border-right: 0; border-bottom: var(--border-width) solid var(--background-modifier-border); }
   .ps-preview { min-height: 0; }
 }
+
+.ps-preset-transfers { display: flex; gap: var(--size-4-2); padding-bottom: var(--size-4-2); }
+.ps-preset-transfers > button, .ps-preset-transfers > select { flex: 1; min-width: 0; }
+.ps-preview-bar { flex-wrap: wrap; }
+.ps-preview-controls { display: flex; align-items: center; gap: var(--size-4-1); }
+.ps-preview-controls input[type=number] { width: 52px; text-align: center; }
+.ps-preview-controls select { margin-inline-start: var(--size-4-2); max-width: 115px; }
+.ps-page-total { white-space: nowrap; }

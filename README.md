@@ -2,14 +2,18 @@
 
 Give your notes a proper letterhead. Print Studio is a desktop Obsidian plugin that turns Markdown notes into branded, paginated documents with company logos, page borders, custom headers and footers, and reusable presets.
 
-## Install locally
+## Install
 
-1. Download or build `print-studio-0.1.0.zip` and extract the `print-studio` folder.
+Requires **desktop Obsidian 1.13.0 or newer**.
+
+1. Download `print-studio-0.2.0.zip` from the [0.2.0 release](https://github.com/5krus/obsidian-print-studio/releases/tag/0.2.0), or run `npm run package` and extract the `print-studio` folder.
 2. Put that folder in `<your-vault>/.obsidian/plugins/print-studio/`.
 3. In Obsidian, reload the app and enable **Print Studio** under **Settings → Community plugins**. If Restricted mode is on, enable community plugins first.
 4. Open a Markdown note. Run **Print Studio: Preview & print current note** from the command palette, click the printer ribbon icon, or right-click a note and select **Open in Print Studio**.
 
-The installed folder must contain `manifest.json`, `main.js`, and `styles.css` directly. This is a local development release, not yet listed in Obsidian’s community directory.
+The installed folder must contain `manifest.json`, `main.js`, and `styles.css` directly. This independent plugin is not yet listed in Obsidian’s community directory. The repository is currently private; sign in to GitHub with an account that has access to download the release. When updating, replace the plugin files while keeping your existing `data.json`.
+
+![Print Studio in Obsidian dark mode](docs/print-studio-dark.png)
 
 ## Design your document
 
@@ -22,6 +26,16 @@ The left sidebar controls your layout; the preview shows the actual paginated do
 - **Borders & color:** no border, fine line, double line, or dashed border; adjustable thickness and accent color.
 - **Header and footer:** independent left, center, and right text, plus optional dividing rules. Content repeats on every physical page.
 - **Dynamic text:** note title, company, date, vault, note properties, and actual page numbers.
+
+### Move or back up presets
+
+Use **Import presets** to choose a Print Studio JSON export. Imports add independent copies and select the first imported preset; they never overwrite an existing preset. Duplicate names receive an “imported” suffix.
+
+The **Export…** menu offers **Current preset** and **All presets**. Exports include logos and layout settings, without note contents. Files are limited to 10 MB and the vault can hold up to 30 presets. For a larger backup, export presets individually.
+
+### Preview navigation
+
+Use the previous/next arrows or type a page number to jump through the preview. Choose **Fit width** or a zoom level from **50% to 200%**. Scrolling updates the page number. Zoom affects only the preview; exported HTML and printed pages retain their actual paper size.
 
 ### Placeholders
 
@@ -61,7 +75,7 @@ Choose **Print / Save PDF** after pagination finishes. Select a printer or your 
 
 - Standard headings, paragraphs, emphasis, lists, tables, blockquotes, task states, code blocks, links, and vault image attachments are supported. Print typography is intentionally independent of the active Obsidian theme.
 - Remote, missing, or attachments larger than 10 MB become labeled placeholders in the self-contained document. Use image attachments in the vault for reliable offline output. The preview reports omitted images.
-- Obsidian renders the note before the isolated print frame is created. Existing Markdown plugins may execute their own rendering logic at this stage. The generated print frame itself blocks network access and receives sanitized static content.
+- Obsidian renders the note before the isolated print frame is created. Obsidian and enabled Markdown plugins may load remote resources during that initial rendering stage. Print Studio adds no network service of its own. The generated print frame itself blocks network access and receives sanitized static content.
 - Interactive plugin blocks, delayed Dataview output, embedded notes/PDFs, and complex MathJax/Mermaid rendering are not guaranteed to match Obsidian. Check the preview; support for those is not claimed in this MVP.
 - Very long unbreakable table rows or unusual HTML blocks may need manual page breaks or simpler formatting. Oversized images are constrained to the printable area.
 - Very long header/footer values can be clipped by the reserved band. Keep the text short or increase its corresponding margin.
@@ -72,9 +86,8 @@ Choose **Print / Save PDF** after pagination finishes. Select a printer or your 
 Requires Node.js 22+ and npm.
 
 ```sh
-npm install
-npm test
-npm run build
+npm ci
+npm run check    # official Obsidian lint rules, unit tests, and build
 npm run demo      # http://localhost:5184
 npm run package   # installable release folder + ZIP
 ```
@@ -87,7 +100,20 @@ The browser demo uses the **same designer, sanitization, pagination runtime, and
 
 Automated tests cover settings recovery, page geometry, templates, metadata, frontmatter, manual breaks, HTML sanitization, and frame isolation. Browser checks cover multi-page pagination, repeated branding, page totals, preset changes, and the designer interface.
 
-This release has not yet been tested inside a live Obsidian vault or against a physical printer. Browser preview checks do not substitute for an Obsidian/system print test on the target OS.
+Version 0.2.0 has been tested in **Obsidian 1.13.7 on Linux**, including native controls, pagination, page navigation, theme changes, and HTML export. Automated browser tests generate PDFs for A4 and Letter in both orientations and check page dimensions, complete content, image decoding, checklists, manual page breaks, and page furniture. See the [validation report](docs/VALIDATION.md).
+
+No physical printer is configured on the development machine. Physical paper output and Windows/macOS system print dialogs remain unverified.
+
+To run the browser/PDF suite, install Chromium and Poppler (`pdfinfo`, `pdftotext`):
+
+```sh
+npx playwright install chromium
+npm run test:browser
+# Or use an existing Chromium binary:
+CHROMIUM_PATH=/path/to/chromium npm run test:browser
+```
+
+PDF artifacts are written under `test-results/`. See [community submission preparation](docs/COMMUNITY_SUBMISSION.md) for the remaining publishing steps.
 
 ## Structure
 
@@ -97,6 +123,7 @@ This release has not yet been tested inside a live Obsidian vault or against a p
 - `src/ui.ts`, `demo/ui.ts` — UI adapter contract and standalone demo controls.
 - `src/frame.ts` — isolated Paged.js pagination, repeated page furniture, print/export actions.
 - `src/document.ts` — sanitized print document and physical page CSS.
+- `src/presets.ts`, `src/messages.ts` — validated preset transfers and frame communication.
 - `src/settings.ts`, `src/template.ts` — portable presets, validation, and dynamic text.
 
 Built with [Obsidian’s public plugin API](https://github.com/obsidianmd/obsidian-api), [Paged.js](https://github.com/pagedjs/pagedjs), and [DOMPurify](https://github.com/cure53/DOMPurify). See `THIRD_PARTY_NOTICES.md` for bundled dependency licenses.

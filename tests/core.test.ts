@@ -27,3 +27,8 @@ test('invalid saved data recovers defaults, duplicate identities and active sele
 test('paper dimensions correctly follow size and orientation',()=>{
   const p=defaults().presets[0];assert.deepEqual(paperSize(p),[210,297]);assert.deepEqual(paperSize({...p,paper:'Letter',orientation:'landscape'}),[279.4,215.9]);
 });
+
+test('recovered preset identities cannot collide with an existing generated-looking identity',()=>{
+  const settings=normalizeSettings({presets:[{id:'preset-2'},{id:'x'},{id:'x'}]});
+  assert.equal(new Set(settings.presets.map(p=>p.id)).size,3);
+});

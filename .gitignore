@@ -3,3 +3,5 @@ main.js
 build/
 release/
 *.zip
+test-results/
+playwright-report/

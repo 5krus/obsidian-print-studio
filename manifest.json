@@ -1,1 +1,10 @@
-{"id":"print-studio","name":"Print Studio","version":"0.1.0","minAppVersion":"1.5.0","description":"Turn notes into branded, print-ready documents with page borders, logos, reusable presets, headers, and footers.","author":"Print Studio contributors","isDesktopOnly":true}
+{
+  "id": "print-studio",
+  "name": "Print Studio",
+  "version": "0.2.0",
+  "minAppVersion": "1.13.0",
+  "description": "Turn notes into branded, print-ready documents with page borders, logos, reusable presets, headers, and footers.",
+  "author": "Eryk Krusinski",
+  "isDesktopOnly": true,
+  "authorUrl": "https://github.com/5krus"
+}

@@ -1,4 +1,4 @@
-import {Component, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile} from 'obsidian';
+import {Component, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
 import {StudioPanel} from './panel';
 import {obsidianUI} from './obsidian-ui';
 import {normalizeSettings, type Settings} from './settings';
@@ -9,7 +9,7 @@ export default class PrintStudioPlugin extends Plugin {
   private studios=new Set<PrintModal>();
   async onload() {
     this.studioSettings=normalizeSettings(await this.loadData());
-    this.addCommand({id:'open-print-studio',name:'Preview & print current note',checkCallback:checking=>{const file=this.app.workspace.getActiveFile();if(file?.extension!=='md')return false;if(!checking)this.openStudio(file);return true;}});
+    this.addCommand({id:'preview',name:'Preview & print current note',checkCallback:checking=>{const file=this.app.workspace.getActiveFile();if(file?.extension!=='md')return false;if(!checking)this.openStudio(file);return true;}});
     this.addRibbonIcon('printer','Print Studio',()=>{const file=this.app.workspace.getActiveFile();if(file?.extension==='md')this.openStudio(file);else new Notice('Open a Markdown note to use Print Studio.');});
     this.registerEvent(this.app.workspace.on('file-menu',(menu,file)=>{if(file instanceof TFile && file.extension==='md')menu.addItem(item=>item.setTitle('Open in Print Studio').setIcon('printer').onClick(()=>this.openStudio(file)));}));
     this.addSettingTab(new PrintSettings(this));
@@ -20,7 +20,17 @@ export default class PrintStudioPlugin extends Plugin {
 }
 class PrintSettings extends PluginSettingTab {
   constructor(private plugin:PrintStudioPlugin){super(plugin.app,plugin);}
-  display(){this.containerEl.empty();this.containerEl.createEl('p',{text:'Create reusable letterheads and print layouts from the preview. Presets and logos are stored locally in this vault’s plugin settings.'});new Setting(this.containerEl).setName('Print preview').setDesc('Open a Markdown note first, then customize its pages, branding, headers, and footers.').addButton(button=>button.setButtonText('Open Print Studio').onClick(()=>{const file=this.app.workspace.getActiveFile();if(file?.extension==='md')this.plugin.openStudio(file);else new Notice('Open a Markdown note first.');}));this.containerEl.createEl('p',{text:'Print Studio has its own command. It does not modify Obsidian’s built-in PDF export or your original note.'});}
+  getSettingDefinitions():SettingDefinitionItem[] {
+    return [
+      {name:'Print preview',desc:'Open a Markdown note to customize its pages, branding, headers, and footers.',render:setting=>{
+        setting.addButton(button=>button.setButtonText('Open Print Studio').onClick(()=>{
+          const file=this.app.workspace.getActiveFile();
+          if(file?.extension==='md')this.plugin.openStudio(file);else new Notice('Open a Markdown note first.');
+        }));
+      }},
+      {name:'Preset storage',desc:'Presets and logos are saved in this vault. Import or export presets from the print preview to move them between vaults.'},
+    ];
+  }
 }
 class PrintModal extends Modal {
   private panel?:StudioPanel;
@@ -30,7 +40,7 @@ class PrintModal extends Modal {
   private renderComponent?:Component;
   private isClosed=false;
   constructor(private plugin:PrintStudioPlugin,private file:TFile,private closed:()=>void){super(plugin.app);}
-  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'ps-render-source markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e);}});})});}
+  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'ps-render-source markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e instanceof Error?e:new Error(String(e)));}});})});}
   private async renderNote(){
     if(this.isClosed)throw new Error('Print preview was closed.');
     const view=this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -54,7 +64,7 @@ class PrintModal extends Modal {
       }catch{missing++;}
     }
     // Preserve task state while removing interactive controls from the print document.
-    for(const checkbox of root.querySelectorAll<HTMLInputElement>('input[type=checkbox]')){const mark=document.createElement('span');mark.className='ps-check';mark.textContent=checkbox.checked?'☑':'☐';checkbox.replaceWith(mark);}
+    for(const checkbox of root.querySelectorAll<HTMLInputElement>('input[type=checkbox]')){const mark=root.createSpan();mark.className='ps-check';mark.textContent=checkbox.checked?'☑\uFE0E':'☐';checkbox.replaceWith(mark);}
     if(missing)warnings.push(`${missing} remote, missing, or oversized image(s) replaced with placeholders. Use vault attachments for self-contained printing.`);
     if(root.querySelector('.internal-embed:not(.image-embed),.block-language-dataview,.block-language-dataviewjs'))warnings.push('Embedded notes and dynamic plugin blocks may need checking in the preview.');
     const metadata=this.app.metadataCache.getFileCache(this.file)?.frontmatter ?? {};

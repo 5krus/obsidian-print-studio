@@ -20,3 +20,11 @@ test('frame payload cannot close its script element and preview is network isola
   const html=frameDocument({html:'<h1>Hello</h1>',preset:defaults().presets[0],context:{title:'</script><script>attack()</script>',vault:'Work',date:'Today',metadata:{evil:'</script>'}}},'token');
   assert.match(html,/connect-src 'none'/);assert.match(html,/\\u003c\/script>/);assert.doesNotMatch(html,/<script>attack/);assert.equal((html.match(/<script>/g)??[]).length,2);
 });
+
+test('code block controls and their icons are removed without losing code or checklist state',()=>{
+  const html=cleanMarkup('<pre><code>const answer = 42;</code><button class="copy-code-button"><svg><path d="M0 0h2"/></svg>Copy</button></pre><ul><li><input type="checkbox" checked>Done</li><li><input type="checkbox">Pending</li></ul>');
+  assert.match(html,/const answer = 42;/);
+  assert.doesNotMatch(html,/<button|<svg|Copy|<input/);
+  assert.match(html,/☑/);assert.match(html,/☐/);
+  assert.equal((html.match(/task-list-item/g)??[]).length,2);
+});

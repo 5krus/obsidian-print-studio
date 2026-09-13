@@ -1,2 +1,2 @@
-declare module 'pagedjs' {export class Previewer {chunker:{hooks:{afterPageLayout:{register(callback:(element:HTMLElement,page:{removeListeners():void})=>void):void}}};preview(content: string | HTMLElement, stylesheets: Array<Record<string,string>>, renderTo: HTMLElement): Promise<{total:number;pages:Array<{removeListeners():void}>;stop():void}>}}
+declare module 'pagedjs' {export class Previewer {chunker:{q:{tick:(callback:()=>void)=>void};hooks:{afterPageLayout:{register(callback:(element:HTMLElement,page:{removeListeners():void})=>void):void}}};preview(content: string | HTMLElement, stylesheets: Array<Record<string,string>>, renderTo: HTMLElement): Promise<{total:number;pages:Array<{removeListeners():void}>;stop():void}>}}
 declare const FRAME_RUNTIME: string;

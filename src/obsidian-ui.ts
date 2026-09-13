@@ -9,7 +9,7 @@ class RemovePresetModal extends Modal {
     this.contentEl.createEl('p', {text: `Remove “${this.presetName}”? This cannot be undone.`});
     const actions = this.contentEl.createDiv({cls: 'modal-button-container'});
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
-    new ButtonComponent(actions).setButtonText('Remove').setWarning().onClick(() => {this.confirmed = true; this.close();});
+    new ButtonComponent(actions).setButtonText('Remove').setDestructive().setCta().onClick(() => {this.confirmed = true; this.close();});
   }
   onClose() {this.contentEl.empty(); this.resolve(this.confirmed);}
 }

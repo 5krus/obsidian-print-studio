@@ -40,7 +40,7 @@ export function normalizePreset(input: unknown): Preset {
 }
 export function normalizeSettings(input: unknown): Settings {
   const v=obj(input); if (!Array.isArray(v.presets) || !v.presets.length) return defaults();
-  const seen=new Set<string>(); const presets=v.presets.slice(0,30).map((p,i)=>{const result=normalizePreset(p);if(!result.id || seen.has(result.id)) result.id=`preset-${i}`;seen.add(result.id);return result;});
+  const seen=new Set<string>(); const presets=v.presets.slice(0,30).map((p,i)=>{const result=normalizePreset(p);if(!result.id || seen.has(result.id)){let suffix=i;do{result.id=`preset-${suffix++}`;}while(seen.has(result.id));}seen.add(result.id);return result;});
   return {version:1,presets,activeId:presets.some(p=>p.id===v.activeId) ? String(v.activeId) : presets[0].id};
 }
 export function paperSize(p: Preset): [number,number] {const size: [number,number] = p.paper === 'Letter' ? [215.9,279.4] : [210,297];return p.orientation === 'landscape' ? [size[1],size[0]] : size;}

@@ -1,8 +1,10 @@
 import DOMPurify from 'dompurify';
 import {frameDocument} from './document';
 import {normalizePreset, type Settings, type Preset} from './settings';
+import {frameMessage} from './messages';
 import type {DocumentContext} from './template';
 import type {SettingRow, StudioUI} from './ui';
+import {exportPresets, importPresets, MAX_PRESET_FILE_BYTES} from './presets';
 let fieldId = 0;
 export interface StudioHost {
   settings:Settings;
@@ -19,6 +21,13 @@ export class StudioPanel {
   private printButton:HTMLButtonElement;
   private exportButton:HTMLButtonElement;
   private controls:HTMLElement;
+  private pageInput:HTMLInputElement;
+  private pageTotal:HTMLElement;
+  private previousButton:HTMLButtonElement;
+  private nextButton:HTMLButtonElement;
+  private zoomSelect:HTMLSelectElement;
+  private pageCount=0;
+  private currentPage=1;
   private notes:HTMLElement;
   private noteName:HTMLElement;
   private themeObserver:MutationObserver;
@@ -28,16 +37,18 @@ export class StudioPanel {
   private expanded = new Set(['Identity']);
   private revision=0;
   private token='';
-  private timer:ReturnType<typeof setTimeout>|undefined;
-  private timeout:ReturnType<typeof setTimeout>|undefined;
+  private timer:number|undefined;
+  private timeout:number|undefined;
   private disposed=false;
   private saveQueue=Promise.resolve();
   private title='document';
-  private onMessage=(event:MessageEvent)=>{
-    if(event.source!==this.frame.contentWindow || event.data?.token!==this.token || this.disposed) return;
-    if(event.data.type==='ready') {this.syncTheme();clearTimeout(this.timeout);this.status.textContent=`${event.data.pages} ${event.data.pages===1?'page':'pages'} · Ready to print`;this.printButton.disabled=false;this.exportButton.disabled=false;}
-    if(event.data.type==='error') {clearTimeout(this.timeout);this.status.textContent='Preview failed';this.host.notify('Print Studio: '+String(event.data.message));}
-    if(event.data.type==='exported' && typeof event.data.html==='string') {const blob=new Blob([event.data.html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`${this.title.replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,100)||'document'} — Print Studio.html`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  private onMessage=(event:MessageEvent<unknown>)=>{
+    const message=frameMessage(event.data);
+    if(event.source!==this.frame.contentWindow || !message || message.token!==this.token || this.disposed) return;
+    if(message.type==='ready') {this.syncTheme();window.clearTimeout(this.timeout);this.status.textContent=`${message.pages} ${message.pages===1?'page':'pages'} · Ready to print`;this.printButton.disabled=false;this.exportButton.disabled=false;this.pageCount=message.pages;this.currentPage=1;this.updateNavigation();this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');}
+    if(message.type==='viewport' && Number.isInteger(message.page)) {this.currentPage=Math.min(this.pageCount,Math.max(1,message.page));this.updateNavigation();}
+    if(message.type==='error') {this.disablePreview();window.clearTimeout(this.timeout);this.status.textContent='Preview failed';this.host.notify('Print Studio: '+String(message.message));}
+    if(message.type==='exported' && typeof message.html==='string') this.download(message.html, `${this.safeFilename(this.title)} — Print Studio.html`, 'text/html;charset=utf-8');
   };
   constructor(private root:HTMLElement, private host:StudioHost) {
     this.settings = structuredClone(host.settings);
@@ -68,7 +79,20 @@ export class StudioPanel {
     bar.append(el('span', '', 'Preview'));
     this.status = el('span', '', 'Preparing…');
     this.status.setAttribute('role', 'status');
-    bar.append(this.status);
+    const navigation = el('div', 'ps-preview-controls');
+    this.previousButton = host.ui.button(navigation, 'Previous page', () => this.goToPage(this.currentPage-1), {icon:'chevron-left'});
+    this.pageInput = host.ui.text(navigation, '1') as HTMLInputElement;
+    this.pageInput.type='number'; this.pageInput.min='1'; this.pageInput.step='1';
+    this.pageInput.setAttribute('aria-label','Page');
+    this.pageInput.onchange=()=>this.goToPage(Number(this.pageInput.value));
+    this.pageInput.onkeydown=event=>{if(event.key==='Enter')this.goToPage(Number(this.pageInput.value));};
+    this.pageTotal = el('span', 'ps-page-total', 'of 0');
+    navigation.append(this.pageTotal);
+    this.nextButton = host.ui.button(navigation, 'Next page', () => this.goToPage(this.currentPage+1), {icon:'chevron-right'});
+    this.zoomSelect = host.ui.dropdown(navigation, 'fit', {fit:'Fit width', '0.5':'50%', '0.75':'75%', '1':'100%', '1.25':'125%', '1.5':'150%', '2':'200%'});
+    this.zoomSelect.setAttribute('aria-label','Preview zoom');
+    this.zoomSelect.onchange=()=>this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');
+    bar.append(navigation, this.status);
     this.frame = el('iframe', 'ps-frame');
     this.frame.title = 'Paginated print preview';
     this.frame.setAttribute('sandbox', 'allow-scripts allow-modals');
@@ -85,7 +109,47 @@ export class StudioPanel {
   }
   private get preset() {return this.settings.presets.find(p=>p.id===this.settings.activeId)!;}
   private persist() {const snapshot=structuredClone(this.settings);this.saveQueue=this.saveQueue.catch(()=>{}).then(()=>this.host.save(snapshot)).catch(()=>this.host.notify('Print Studio could not save your presets.'));}
-  private change() {++this.revision;this.token='';this.persist();this.printButton.disabled=true;this.exportButton.disabled=true;this.status.textContent='Updating preview…';clearTimeout(this.timer);this.timer=setTimeout(()=>void this.render(),450);}
+  private change() {++this.revision;this.token='';this.persist();this.disablePreview();this.status.textContent='Updating preview…';window.clearTimeout(this.timer);this.timer=window.setTimeout(()=>void this.render(),450);}
+  private safeFilename(name:string) {return name.replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,100)||'document';}
+  private download(content:string, filename:string, type:string) {
+    const url=URL.createObjectURL(new Blob([content],{type}));
+    const link=el('a');link.href=url;link.download=filename;link.click();
+    window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  private disablePreview() {
+    this.printButton.disabled=true;this.exportButton.disabled=true;
+    this.pageCount=0;this.currentPage=1;this.updateNavigation();
+  }
+  private updateNavigation() {
+    this.previousButton.disabled=this.pageCount===0 || this.currentPage<=1;
+    this.nextButton.disabled=this.pageCount===0 || this.currentPage>=this.pageCount;
+    this.pageInput.disabled=this.pageCount===0;this.zoomSelect.disabled=this.pageCount===0;
+    this.pageInput.value=String(this.currentPage || 1);this.pageInput.max=String(this.pageCount);
+    this.pageTotal.textContent=`of ${this.pageCount}`;
+  }
+  private goToPage(value:number) {
+    if(!this.pageCount)return;
+    this.currentPage=Math.min(this.pageCount,Math.max(1,Math.round(value)||1));
+    this.updateNavigation();
+    this.frame.contentWindow?.postMessage({type:'page',page:this.currentPage,token:this.token},'*');
+  }
+  private exportPresetFile(all:boolean) {
+    try {
+      const presets=all?this.settings.presets:[this.preset];
+      this.download(exportPresets(presets),all?'Print Studio presets.json':`${this.safeFilename(this.preset.name)}.print-studio.json`,'application/json');
+    }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
+  }
+  async importPresetFile(file:File) {
+    try {
+      if(file.size>MAX_PRESET_FILE_BYTES)throw new Error('Choose a preset file smaller than 10 MB.');
+      const text=await file.text();
+      if(this.disposed)return;
+      const settings=importPresets(text,this.settings);
+      const count=settings.presets.length-this.settings.presets.length;
+      this.settings=settings;this.renderControls();this.change();
+      this.host.notify(`Imported ${count} ${count===1?'preset':'presets'}.`);
+    }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
+  }
   private section(title:string) {
     const section = el('details', 'ps-section');
     section.dataset.section = title;
@@ -171,6 +235,15 @@ export class StudioPanel {
     }, {icon:'copy'});
     const remove = this.host.ui.button(presetRow.control, 'Remove preset', () => void this.removePreset(), {icon:'trash-2'});
     remove.disabled = this.settings.presets.length<2;
+    const transfers=el('div','ps-preset-transfers');
+    const importInput=el('input');importInput.type='file';importInput.accept='.json,application/json';importInput.hidden=true;
+    importInput.onchange=()=>{const file=importInput.files?.[0];if(file)void this.importPresetFile(file);importInput.value='';};
+    transfers.append(importInput);
+    this.host.ui.button(transfers,'Import presets',()=>importInput.click());
+    const exportSelect=this.host.ui.dropdown(transfers,'',{'':'Export…',current:'Current preset',all:'All presets'});
+    exportSelect.setAttribute('aria-label','Export presets');
+    exportSelect.onchange=()=>{if(exportSelect.value)this.exportPresetFile(exportSelect.value==='all');exportSelect.value='';};
+    presetBox.append(transfers);
 
     const brand = this.section('Identity');
     this.text(brand, 'Preset name', this.preset.name, value => {
@@ -245,9 +318,9 @@ export class StudioPanel {
     }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
   }
   async render() {
-    clearTimeout(this.timer);clearTimeout(this.timeout);const revision=++this.revision;this.token=crypto.randomUUID();this.printButton.disabled=true;this.exportButton.disabled=true;this.status.textContent='Preparing pages…';
+    window.clearTimeout(this.timer);window.clearTimeout(this.timeout);const revision=++this.revision;this.token=crypto.randomUUID();this.disablePreview();this.status.textContent='Preparing pages…';
     const preset=normalizePreset(this.preset);
-    try {const source=await this.host.source();if(this.disposed || revision!==this.revision)return;this.title=source.context.title;this.noteName.textContent=this.title;this.noteName.title=this.title;this.notes.textContent=source.warnings.length?source.warnings.join(' · '):'Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.';this.frame.srcdoc=frameDocument({html:source.html,preset,context:source.context},this.token,this.colorScheme());this.timeout=setTimeout(()=>{if(!this.disposed && revision===this.revision)this.status.textContent='This note is taking longer to paginate. Try Refresh note.';},30000);}catch(error){if(revision!==this.revision || this.disposed)return;this.status.textContent='Could not render this note';this.host.notify(error instanceof Error?error.message:String(error));}
+    try {const source=await this.host.source();if(this.disposed || revision!==this.revision)return;this.title=source.context.title;this.noteName.textContent=this.title;this.noteName.title=this.title;this.notes.textContent=source.warnings.length?source.warnings.join(' · '):'Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.';this.frame.srcdoc=frameDocument({html:source.html,preset,context:source.context},this.token,this.colorScheme());this.timeout=window.setTimeout(()=>{if(!this.disposed && revision===this.revision)this.status.textContent='This note is taking longer to paginate. Try refreshing the note.';},30000);}catch(error){if(revision!==this.revision || this.disposed)return;this.status.textContent='Could not render this note';this.host.notify(error instanceof Error?error.message:String(error));}
   }
-  dispose(){this.disposed=true;this.themeObserver.disconnect();++this.revision;clearTimeout(this.timer);clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
+  dispose(){this.disposed=true;this.themeObserver.disconnect();++this.revision;window.clearTimeout(this.timer);window.clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
 }

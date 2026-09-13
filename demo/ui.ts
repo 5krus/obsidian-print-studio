@@ -46,6 +46,7 @@ export const browserUI:StudioUI = {
       'trash-2':['M3 6h18','M19 6l-1 14H6L5 6','M9 6V3h6v3','M10 10v6','M14 10v6'],
       x:['M18 6 6 18','M6 6l12 12'],
       'chevron-right':['m9 18 6-6-6-6'],
+      'chevron-left':['m15 18-6-6 6-6'],
     };
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
     for(const [key,value] of Object.entries({viewBox:'0 0 24 24',width:'18',height:'18',fill:'none',stroke:'currentColor','stroke-width':'1.75','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'})) svg.setAttribute(key,value);
