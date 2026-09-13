@@ -1,3 +1,5 @@
+// Runs in a sandboxed iframe without Obsidian or access to the parent DOM.
+// Standard DOM creation here is intentional; do not add Obsidian globals.
 import {Previewer} from 'pagedjs';
 import {frameCommand} from './messages';
 import {pageCss, type PrintJob} from './document';

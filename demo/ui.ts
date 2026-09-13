@@ -1,11 +1,20 @@
-import type {StudioUI} from '../src/ui';
+import type {ElementFactory, StudioUI} from '../src/ui';
+
+// Standalone browser adapter: Obsidian's DOM helpers do not exist here.
+const browserElement: ElementFactory = (tag, cls = '', text = '') => {
+  const node = document.createElement(tag);
+  node.className = cls;
+  node.textContent = text;
+  return node;
+};
 
 function append<K extends keyof HTMLElementTagNameMap>(parent:HTMLElement, tag:K, cls='', text='') {
-  const node=document.createElement(tag); node.className=cls; node.textContent=text; parent.append(node); return node;
+  const node=browserElement(tag, cls, text); parent.append(node); return node;
 }
 // Small standalone counterparts for the Obsidian components used by the panel.
 // Production imports the real components from Obsidian through obsidian-ui.ts.
 export const browserUI:StudioUI = {
+  createElement: browserElement,
   setting(parent, name, description) {
     const element=append(parent,'div','setting-item');
     const info=append(element,'div','setting-item-info');
@@ -53,5 +62,19 @@ export const browserUI:StudioUI = {
     for(const d of paths[name]??[]){const path=document.createElementNS(svg.namespaceURI,'path'); path.setAttribute('d',d); svg.append(path);}
     parent.replaceChildren(svg);
   },
-  confirmRemoval:async name=>window.confirm(`Remove “${name}”? This cannot be undone.`),
+  confirmRemoval: name => new Promise(resolve => {
+    const dialog = append(document.body, 'dialog', 'demo-confirm');
+    dialog.setAttribute('aria-labelledby', 'demo-confirm-title');
+    append(dialog, 'h2', '', 'Remove preset').id = 'demo-confirm-title';
+    append(dialog, 'p', '', `Remove “${name}”? You can undo this while Print Studio stays open.`);
+    const actions = append(dialog, 'div', 'demo-confirm-actions');
+    browserUI.button(actions, 'Cancel', () => dialog.close());
+    browserUI.button(actions, 'Remove', () => dialog.close('remove'), {primary: true});
+    dialog.addEventListener('close', () => {
+      const confirmed = dialog.returnValue === 'remove';
+      dialog.remove();
+      resolve(confirmed);
+    }, {once: true});
+    dialog.showModal();
+  }),
 };

@@ -14,8 +14,11 @@ export interface StudioHost {
   save(settings:Settings):Promise<void>;
   notify(message:string):void;
 }
-function el<K extends keyof HTMLElementTagNameMap>(tag:K, cls='', text=''):HTMLElementTagNameMap[K] {const node=document.createElement(tag);node.className=cls;if(text)node.textContent=text;return node;}
+
 export class StudioPanel {
+  private el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') {
+    return this.host.ui.createElement(tag, cls, text);
+  }
   private settings:Settings;
   private frame:HTMLIFrameElement;
   private status:HTMLElement;
@@ -63,50 +66,50 @@ export class StudioPanel {
     this.settings = structuredClone(host.settings);
     this.history = new PresetHistory(this.settings);
     root.classList.add('ps-studio');
-    const top = el('header', 'ps-top');
-    const identity = el('div', 'ps-identity');
-    const icon = el('span', 'ps-title-icon');
+    const top = this.el('header', 'ps-top');
+    const identity = this.el('div', 'ps-identity');
+    const icon = this.el('span', 'ps-title-icon');
     icon.setAttribute('aria-hidden', 'true');
     host.ui.icon(icon, 'printer');
-    identity.append(icon, el('span', 'ps-title', 'Print Studio'));
-    this.noteName = el('span', 'ps-note-name');
+    identity.append(icon, this.el('span', 'ps-title', 'Print Studio'));
+    this.noteName = this.el('span', 'ps-note-name');
     top.append(identity, this.noteName);
-    const actions = el('div', 'ps-actions');
+    const actions = this.el('div', 'ps-actions');
     host.ui.button(actions, 'Refresh note', () => void this.render(true), {icon: 'refresh-cw'});
     this.exportButton = host.ui.button(actions, 'Export HTML', () => this.frame.contentWindow?.postMessage({type:'export', token:this.token}, '*'), {tooltip:'Export pages as a self-contained HTML document'});
     this.printButton = host.ui.button(actions, 'Print / Save PDF', () => this.frame.contentWindow?.postMessage({type:'print', token:this.token}, '*'), {primary:true});
     this.printButton.classList.add('ps-primary');
     top.append(actions);
 
-    const body = el('div', 'ps-workbench');
-    const side = el('aside', 'ps-sidebar');
+    const body = this.el('div', 'ps-workbench');
+    const side = this.el('aside', 'ps-sidebar');
     side.setAttribute('aria-label', 'Print layout');
-    this.controls = el('div', 'ps-controls');
+    this.controls = this.el('div', 'ps-controls');
     side.append(this.controls);
-    const preview = el('section', 'ps-preview');
+    const preview = this.el('section', 'ps-preview');
     preview.setAttribute('aria-label', 'Document preview');
-    const bar = el('div', 'ps-preview-bar');
-    bar.append(el('span', '', 'Preview'));
-    this.status = el('span', '', 'Preparing…');
+    const bar = this.el('div', 'ps-preview-bar');
+    bar.append(this.el('span', '', 'Preview'));
+    this.status = this.el('span', '', 'Preparing…');
     this.status.setAttribute('role', 'status');
-    const navigation = el('div', 'ps-preview-controls');
+    const navigation = this.el('div', 'ps-preview-controls');
     this.previousButton = host.ui.button(navigation, 'Previous page', () => this.goToPage(this.currentPage-1), {icon:'chevron-left'});
     this.pageInput = host.ui.text(navigation, '1') as HTMLInputElement;
     this.pageInput.type='number'; this.pageInput.min='1'; this.pageInput.step='1';
     this.pageInput.setAttribute('aria-label','Page');
     this.pageInput.onchange=()=>this.goToPage(Number(this.pageInput.value));
     this.pageInput.onkeydown=event=>{if(event.key==='Enter')this.goToPage(Number(this.pageInput.value));};
-    this.pageTotal = el('span', 'ps-page-total', 'of 0');
+    this.pageTotal = this.el('span', 'ps-page-total', 'of 0');
     navigation.append(this.pageTotal);
     this.nextButton = host.ui.button(navigation, 'Next page', () => this.goToPage(this.currentPage+1), {icon:'chevron-right'});
     this.zoomSelect = host.ui.dropdown(navigation, 'fit', {fit:'Fit width', '0.5':'50%', '0.75':'75%', '1':'100%', '1.25':'125%', '1.5':'150%', '2':'200%'});
     this.zoomSelect.setAttribute('aria-label','Preview zoom');
     this.zoomSelect.onchange=()=>this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');
     bar.append(navigation, this.status);
-    this.frame = el('iframe', 'ps-frame');
+    this.frame = this.el('iframe', 'ps-frame');
     this.frame.title = 'Paginated print preview';
     this.frame.setAttribute('sandbox', 'allow-scripts allow-modals');
-    this.notes = el('div', 'ps-notes');
+    this.notes = this.el('div', 'ps-notes');
     this.notes.setAttribute('aria-label','Print advice');
     preview.append(bar, this.frame, this.notes);
     body.append(side, preview);
@@ -131,7 +134,7 @@ export class StudioPanel {
   private safeFilename(name:string) {return name.replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,100)||'document';}
   private download(content:string, filename:string, type:string) {
     const url=URL.createObjectURL(new Blob([content],{type}));
-    const link=el('a');link.href=url;link.download=filename;link.click();
+    const link=this.el('a');link.href=url;link.download=filename;link.click();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   private disablePreview() {
@@ -140,19 +143,19 @@ export class StudioPanel {
   }
   private renderNotes() {
     this.notes.replaceChildren();
-    for(const warning of this.sourceWarnings)this.notes.append(el('p','ps-tip',warning));
+    for(const warning of this.sourceWarnings)this.notes.append(this.el('p','ps-tip',warning));
     const advice={header:'Header text or logo is clipped. Shorten the text or increase the top margin.',footer:'Footer text is clipped. Shorten the text or increase the bottom margin.',table:'A table row overflows or spans multiple pages. Check its contents; split the row, reduce the font size, or use landscape.',content:'Content extends beyond the printable area. Reduce its size or simplify its formatting.'};
     if(this.layoutWarnings.length) {
-      const details=el('details','ps-warning-list');details.open=true;
-      details.append(el('summary','',`${this.layoutWarnings.length} layout ${this.layoutWarnings.length===1?'warning':'warnings'}`));
+      const details=this.el('details','ps-warning-list');details.open=true;
+      details.append(this.el('summary','',`${this.layoutWarnings.length} layout ${this.layoutWarnings.length===1?'warning':'warnings'}`));
       for(const warning of this.layoutWarnings) {
-        const row=el('div','ps-warning');
+        const row=this.el('div','ps-warning');
         const button=this.host.ui.button(row,`Page ${warning.page}`,()=>this.goToPage(warning.page));button.disabled=!this.pageCount;
-        row.append(el('span','',advice[warning.kind]));details.append(row);
+        row.append(this.el('span','',advice[warning.kind]));details.append(row);
       }
       this.notes.append(details);
     }
-    if(!this.sourceWarnings.length && !this.layoutWarnings.length)this.notes.append(el('span','','Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.'));
+    if(!this.sourceWarnings.length && !this.layoutWarnings.length)this.notes.append(this.el('span','','Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.'));
   }
   private updateNavigation() {
     this.previousButton.disabled=this.pageCount===0 || this.currentPage<=1;
@@ -185,16 +188,16 @@ export class StudioPanel {
     }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
   }
   private section(title:string) {
-    const section = el('details', 'ps-section');
+    const section = this.el('details', 'ps-section');
     section.dataset.section = title;
     section.open = this.expanded.has(title);
-    const summary = el('summary');
-    const arrow = el('span', 'ps-disclosure');
+    const summary = this.el('summary');
+    const arrow = this.el('span', 'ps-disclosure');
     arrow.setAttribute('aria-hidden', 'true');
     this.host.ui.icon(arrow, 'chevron-right');
-    summary.append(arrow, el('span', '', title));
+    summary.append(arrow, this.el('span', '', title));
     section.append(summary);
-    const body = el('div', 'ps-section-body');
+    const body = this.el('div', 'ps-section-body');
     section.append(body);
     this.controls.append(section);
     return body;
@@ -240,7 +243,7 @@ export class StudioPanel {
   }
   private updatePlaceholders() {
     for(const picker of this.controls.querySelectorAll<HTMLSelectElement>('.ps-placeholder-picker')) {
-      picker.replaceChildren(...Object.entries(placeholderOptions(this.metadata)).map(([value,label])=>{const option=el('option','',label);option.value=value;return option;}));
+      picker.replaceChildren(...Object.entries(placeholderOptions(this.metadata)).map(([value,label])=>{const option=this.el('option','',label);option.value=value;return option;}));
     }
   }
   private select(parent:HTMLElement, title:string, value:string, options:Record<string,string>, set:(v:string)=>void) {
@@ -274,7 +277,7 @@ export class StudioPanel {
     if(sections.length) this.expanded = new Set([...sections].filter(s=>s.open).map(s=>s.dataset.section!));
     const scroll = this.controls.parentElement!.scrollTop;
     this.controls.replaceChildren();
-    const presetBox = el('div', 'ps-preset-box');
+    const presetBox = this.el('div', 'ps-preset-box');
     this.controls.append(presetBox);
     const presetRow = this.row(presetBox, 'Preset', 'Changes save automatically to this vault.', true);
     this.presetSelect = this.host.ui.dropdown(presetRow.control, this.settings.activeId, Object.fromEntries(this.settings.presets.map(p=>[p.id,p.name])));
@@ -289,8 +292,8 @@ export class StudioPanel {
     }, {icon:'copy'});
     const remove = this.host.ui.button(presetRow.control, 'Remove preset', () => void this.removePreset(), {icon:'trash-2'});
     remove.disabled = this.settings.presets.length<2;
-    const transfers=el('div','ps-preset-transfers');
-    const importInput=el('input');importInput.type='file';importInput.accept='.json,application/json';importInput.hidden=true;
+    const transfers=this.el('div','ps-preset-transfers');
+    const importInput=this.el('input');importInput.type='file';importInput.accept='.json,application/json';importInput.hidden=true;
     importInput.onchange=()=>{const file=importInput.files?.[0];if(file)void this.importPresetFile(file);importInput.value='';};
     transfers.append(importInput);
     this.host.ui.button(transfers,'Import presets',()=>importInput.click());
@@ -298,7 +301,7 @@ export class StudioPanel {
     exportSelect.setAttribute('aria-label','Export presets');
     exportSelect.onchange=()=>{if(exportSelect.value)this.exportPresetFile(exportSelect.value==='all');exportSelect.value='';};
     presetBox.append(transfers);
-    const history=el('div','ps-history');
+    const history=this.el('div','ps-history');
     this.undoButton=this.host.ui.button(history,'Undo change',()=>this.restore(),{tooltip:'Undo the last preset change (up to 20 steps in this session)'});
     this.redoButton=this.host.ui.button(history,'Redo change',()=>this.restore(true));
     presetBox.append(history);this.updateHistory();
@@ -312,10 +315,10 @@ export class StudioPanel {
     this.text(brand, 'Company name', this.preset.company, value => this.preset.company=value);
     const logo = this.row(brand, 'Logo', this.preset.logoName || 'PNG, JPG, WebP or SVG, up to 2 MB.', true);
     if(this.preset.logo) {
-      const img = el('img', 'ps-logo-thumbnail'); img.src=this.preset.logo; img.alt='Current company logo';
+      const img = this.el('img', 'ps-logo-thumbnail'); img.src=this.preset.logo; img.alt='Current company logo';
       logo.control.append(img);
     }
-    const upload = el('input'); upload.type='file'; upload.hidden=true;
+    const upload = this.el('input'); upload.type='file'; upload.hidden=true;
     upload.accept='image/png,image/jpeg,image/webp,image/svg+xml';
     upload.onchange = () => {const file=upload.files?.[0]; if(file) void this.loadLogo(file);};
     logo.control.append(upload);
@@ -330,7 +333,7 @@ export class StudioPanel {
     this.number(page, 'Bottom margin (mm)', 'marginBottom', 18, 50);
     this.number(page, 'Side margins (mm)', 'marginSide', 15, 40);
     this.toggle(page, 'Page break before headings', 'headingBreaks', 'Start each top-level heading after the first on a new page.');
-    page.append(el('p', 'ps-tip', 'For a manual page break, add <!-- pagebreak --> on its own line in your note.'));
+    page.append(this.el('p', 'ps-tip', 'For a manual page break, add <!-- pagebreak --> on its own line in your note.'));
 
     const type = this.section('Typography');
     this.select(type, 'Font', this.preset.font, {sans:'Sans serif',serif:'Serif'}, v=>this.preset.font=v as Preset['font']);
@@ -358,9 +361,9 @@ export class StudioPanel {
       this.toggle(first,'Show dividing line','firstPageHeaderRule');
     }
     const tokens = this.section('Text placeholders');
-    tokens.append(el('p', 'ps-tip', 'Use placeholders in a header or footer to include information from your note.'));
+    tokens.append(this.el('p', 'ps-tip', 'Use placeholders in a header or footer to include information from your note.'));
     for(const [token,description] of Object.entries({'{{company}}':'Company name','{{title}}':'Note title','{{date}}':'Current date','{{vault}}':'Vault name','{{page}}':'Current page','{{pages}}':'Total pages','{{meta:client}}':'A note property, such as client'})) {
-      const line=el('div','ps-token'); line.append(el('code','',token),el('span','',description)); tokens.append(line);
+      const line=this.el('div','ps-token'); line.append(this.el('code','',token),this.el('span','',description)); tokens.append(line);
     }
     this.controls.parentElement!.scrollTop=scroll;
   }
@@ -379,7 +382,7 @@ export class StudioPanel {
       let blob:Blob=file;
       if(file.type==='image/svg+xml') {const svg=DOMPurify.sanitize(await file.text(),{USE_PROFILES:{svg:true,svgFilters:true},FORBID_TAGS:['foreignObject','style','image','use'],FORBID_ATTR:['style']});blob=new Blob([svg],{type:'image/svg+xml'});}
       const url=URL.createObjectURL(blob);let data:string;
-      try {const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));canvas.getContext('2d')!.drawImage(img,0,0,canvas.width,canvas.height);data=canvas.toDataURL('image/png');}finally{URL.revokeObjectURL(url);}
+      try {const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight));const canvas=this.el('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));canvas.getContext('2d')!.drawImage(img,0,0,canvas.width,canvas.height);data=canvas.toDataURL('image/png');}finally{URL.revokeObjectURL(url);}
       if(data.length>=3_000_000)throw Error('This logo is too detailed. Try a smaller image.');
       const preset=this.settings.presets.find(p=>p.id===id);if(!preset || this.disposed)return;preset.logo=data;preset.logoName=file.name;this.renderControls();this.change();
     }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
@@ -395,7 +398,7 @@ export class StudioPanel {
       const source=await this.sourcePromise;if(this.disposed || revision!==this.revision)return;
       this.title=source.context.title;this.noteName.textContent=this.title;this.noteName.title=this.title;
       this.metadata=source.context.metadata;this.updatePlaceholders();this.sourceWarnings=source.warnings;this.renderNotes();
-      this.frame.srcdoc=frameDocument({html:source.html,preset,context:source.context},this.token,this.colorScheme());
+      this.frame.srcdoc=frameDocument({html:source.html,preset,context:source.context},this.token,this.host.ui.createElement,this.colorScheme());
       this.timeout=window.setTimeout(()=>{if(!this.disposed && revision===this.revision)this.status.textContent='This note is taking longer to paginate. Try refreshing the note.';},30000);
     }catch(error){if(revision!==this.revision || this.disposed)return;this.status.textContent='Could not render this note';this.host.notify(error instanceof Error?error.message:String(error));}
   }

@@ -10,7 +10,7 @@
 
 .ps-modal .modal-content { height: 100%; margin: 0; padding: 0; }
 .ps-modal .modal-close-button { top: var(--size-4-3); right: var(--size-4-3); z-index: 1; }
-.ps-modal-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.ps-modal-title { position: absolute; width: 1px; height: 1px; overflow: hidden; left: -10000px; white-space: nowrap; }
 
 .ps-studio {
   display: flex;

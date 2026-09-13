@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
+import {browserUI} from '../demo/ui';
 import {defaults} from '../src/settings';
 const dom=new JSDOM('<!doctype html><body></body>');
 Object.assign(globalThis,{window:dom.window,document:dom.window.document,FRAME_RUNTIME:'/* bundled runtime */'});
-const {cleanMarkup,pageCss,frameDocument}=await import('../src/document');
+const documentModule=await import('../src/document');
+const {pageCss}=documentModule;
+const cleanMarkup=(html: string)=>documentModule.cleanMarkup(html, browserUI.createElement);
+const frameDocument=(job: Parameters<typeof documentModule.frameDocument>[0], token: string)=>documentModule.frameDocument(job, token, browserUI.createElement);
 test('print HTML preserves rich content while removing scripts and active embeds',()=>{
   const html=cleanMarkup('<h1>Title</h1><table><tr><td>A</td></tr></table><blockquote>Quote</blockquote><script>alert(1)</script><img src="https://example.com/pixel" onerror="alert(1)" alt="Chart"><iframe src="https://example.com"></iframe><a href="javascript:alert(1)">Bad link</a><p style="position:fixed">Text</p>');
   assert.match(html,/<table>/);assert.match(html,/<blockquote>/);assert.match(html,/\[Image: Chart\]/);assert.doesNotMatch(html,/<script|<iframe|onerror|javascript:|style=|https:\/\/example.com/);

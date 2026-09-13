@@ -131,3 +131,29 @@ test('pagination completes when the host stops delivering animation frames',asyn
   await expect(page.getByRole('status')).toContainText('Ready to print');
   expect(await page.frameLocator('.ps-frame').locator('.pagedjs_page').count()).toBeGreaterThan(2);
 });
+
+test('preset removal dialog supports cancel, Escape, confirmation and undo',async({page})=>{
+  await page.goto('/test.html');
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await page.getByRole('button',{name:'Duplicate preset',exact:true}).click();
+  const presets=page.getByRole('combobox',{name:'Preset',exact:true});
+  const count=await presets.locator('option').count();
+  const remove=page.getByRole('button',{name:'Remove preset',exact:true});
+  const dialog=page.getByRole('dialog',{name:'Remove preset',exact:true});
+  await remove.click();
+  await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();
+  await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(presets.locator('option')).toHaveCount(count);
+  await expect(remove).toBeFocused();
+  await remove.click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(presets.locator('option')).toHaveCount(count);
+  await remove.click();
+  await dialog.getByRole('button',{name:'Remove',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(presets.locator('option')).toHaveCount(count-1);
+  await page.getByRole('button',{name:'Undo change',exact:true}).click();
+  await expect(presets.locator('option')).toHaveCount(count);
+});

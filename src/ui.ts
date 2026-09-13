@@ -12,7 +12,10 @@ export interface ButtonOptions {
   tooltip?: string;
 }
 
+export type ElementFactory = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => HTMLElementTagNameMap[K];
+
 export interface StudioUI {
+  createElement: ElementFactory;
   setting(parent: HTMLElement, name: string, description?: string): SettingRow;
   text(parent: HTMLElement, value: string, multiline?: boolean): HTMLInputElement | HTMLTextAreaElement;
   dropdown(parent: HTMLElement, value: string, options: Record<string, string>): HTMLSelectElement;

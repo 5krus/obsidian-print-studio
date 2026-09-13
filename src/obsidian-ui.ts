@@ -6,7 +6,7 @@ class RemovePresetModal extends Modal {
   constructor(app: App, private presetName: string, private resolve: (value: boolean) => void) {super(app);}
   onOpen() {
     this.setTitle('Remove preset');
-    this.contentEl.createEl('p', {text: `Remove “${this.presetName}”? This cannot be undone.`});
+    this.contentEl.createEl('p', {text: `Remove “${this.presetName}”? You can undo this while Print Studio stays open.`});
     const actions = this.contentEl.createDiv({cls: 'modal-button-container'});
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
     new ButtonComponent(actions).setButtonText('Remove').setDestructive().setCta().onClick(() => {this.confirmed = true; this.close();});
@@ -16,6 +16,7 @@ class RemovePresetModal extends Modal {
 
 export function obsidianUI(app: App): StudioUI {
   return {
+    createElement: (tag, cls = '', text = '') => createEl(tag, {cls, text}),
     setting(parent, name, description) {
       const row = new Setting(parent).setName(name);
       if (description) row.setDesc(description);

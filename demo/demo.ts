@@ -1,7 +1,7 @@
 import {marked} from 'marked';
 import {browserUI} from './ui';
 import {StudioPanel} from '../src/panel';
-import {defaults,normalizeSettings} from '../src/settings';
+import {normalizeSettings} from '../src/settings';
 import {prepareMarkdown} from '../src/template';
 const sample=`---
 title: A clearer direction
@@ -45,7 +45,9 @@ ${Array.from({length:7},(_,i)=>`### ${i+1}. ${['Working together','A thoughtful 
 
 **We look forward to making something meaningful together.**
 `;
+// Demo-only, origin-scoped preferences. This entry point is never bundled into
+// main.js; the plugin stores vault-specific presets through Plugin.saveData().
 const settings=normalizeSettings(JSON.parse(localStorage.getItem('print-studio-demo')??'null'));
 if(!localStorage.getItem('print-studio-demo')){settings.presets[0].company='NORTH STUDIO';settings.presets[0].header.right='PROPOSAL\n{{meta:reference}}';settings.presets[0].footer.left='{{company}} / {{meta:client}}';settings.presets[0].footer.center='';settings.presets[0].headingBreaks=true;
-const canvas=document.createElement('canvas');canvas.width=100;canvas.height=100;const c=canvas.getContext('2d')!;c.fillStyle='#354c49';c.fillRect(0,0,100,100);c.fillStyle='white';c.font='70px Georgia';c.fillText('N',21,75);settings.presets[0].logo=canvas.toDataURL();settings.presets[0].logoName='North Studio · sample logo';}
-new StudioPanel(document.querySelector('#studio')!,{ui:browserUI,settings,source:async()=>({html:await marked.parse(prepareMarkdown(sample)),context:{title:'A clearer direction',date:'13 Sep 2026',vault:'Studio notes',metadata:{client:'Acme & Co.',reference:'NS-2026-014'}},warnings:[]}),save:async next=>localStorage.setItem('print-studio-demo',JSON.stringify(next)),notify:message=>{const notice=document.createElement('div');notice.className='demo-notice';notice.textContent=message;document.body.append(notice);setTimeout(()=>notice.remove(),6000);}});
+const canvas=browserUI.createElement('canvas');canvas.width=100;canvas.height=100;const c=canvas.getContext('2d')!;c.fillStyle='#354c49';c.fillRect(0,0,100,100);c.fillStyle='white';c.font='70px Georgia';c.fillText('N',21,75);settings.presets[0].logo=canvas.toDataURL();settings.presets[0].logoName='North Studio · sample logo';}
+new StudioPanel(document.querySelector('#studio')!,{ui:browserUI,settings,source:async()=>({html:await marked.parse(prepareMarkdown(sample)),context:{title:'A clearer direction',date:'13 Sep 2026',vault:'Studio notes',metadata:{client:'Acme & Co.',reference:'NS-2026-014'}},warnings:[]}),save:async next=>localStorage.setItem('print-studio-demo',JSON.stringify(next)),notify:message=>{const notice=browserUI.createElement('div');notice.className='demo-notice';notice.textContent=message;document.body.append(notice);window.setTimeout(()=>notice.remove(),6000);}});
