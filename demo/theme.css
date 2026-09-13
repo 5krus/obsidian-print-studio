@@ -1,0 +1,56 @@
+/* Standalone preview only. In Obsidian these values and controls come from the app. */
+body {
+  --font-interface: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-monospace: 'SFMono-Regular', Consolas, monospace;
+  --font-ui-small: 13px; --font-ui-smaller: 12px; --font-semibold: 600;
+  --line-height-tight: 1.3; --line-height-normal: 1.5;
+  --size-2-1: 2px; --size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px;
+  --size-4-4: 16px; --size-4-6: 24px; --size-4-12: 48px;
+  --border-width: 1px; --radius-s: 4px; --radius-m: 8px;
+  --input-height: 30px; --icon-s: 18px; --icon-xs: 14px; --cursor: default;
+  --background-primary: #fff; --background-secondary: #f6f6f6;
+  --background-modifier-border: #e0e0e0; --background-modifier-hover: #0000000a;
+  --background-modifier-border-focus: #a88bfa;
+  --text-normal: #222; --text-muted: #5c5c5c; --text-faint: #ababab;
+  --text-accent: #7852ee; --text-on-accent: #fff;
+  --interactive-normal: #fff; --interactive-hover: #f6f6f6;
+  --interactive-accent: #7852ee; --interactive-accent-hover: #916cf2;
+  --background-modifier-form-field: #fff;
+  --input-shadow: 0 1px 2px #00000014, 0 0 0 1px #0000001a;
+  font-family: var(--font-interface); font-size: var(--font-ui-small);
+  color: var(--text-normal); background: var(--background-primary); color-scheme: light;
+}
+body.theme-dark {
+  --background-primary: #1e1e1e; --background-secondary: #262626;
+  --background-modifier-border: #363636; --background-modifier-hover: #ffffff0a;
+  --text-normal: #dadada; --text-muted: #b3b3b3; --text-faint: #666;
+  --text-accent: #a88bfa; --interactive-normal: #2e2e2e; --interactive-hover: #363636;
+  --interactive-accent: #7f5bd7; --interactive-accent-hover: #9273e2;
+  --background-modifier-form-field: #171717;
+  --input-shadow: 0 1px 2px #00000026, 0 0 0 1px #ffffff0b;
+  color-scheme: dark;
+}
+html,body,#studio { height: 100%; margin: 0; }
+button,input,textarea,select { font: inherit; color: var(--text-normal); }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: var(--input-height); padding: 4px 12px; border: 0; border-radius: 5px; background: var(--interactive-normal); box-shadow: var(--input-shadow); cursor: var(--cursor); }
+button:hover { background: var(--interactive-hover); }
+button:disabled { opacity: 0.4; }
+button.mod-cta { background: var(--interactive-accent); color: var(--text-on-accent); }
+button.mod-cta:hover { background: var(--interactive-accent-hover); }
+.clickable-icon { color: var(--text-muted); }
+input[type=text],input[type=number],textarea { background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 4px 8px; height: var(--input-height); }
+textarea { height: auto; }
+select { height: var(--input-height); background-color: var(--interactive-normal); border: 0; box-shadow: var(--input-shadow); border-radius: 5px; padding: 4px 8px; }
+input[type=color] { appearance: none; border: 0; padding: 0; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: none; }
+input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.setting-item { display: flex; align-items: center; border-top: 1px solid var(--background-modifier-border); }
+.setting-item-info { flex: 1 1 auto; }
+.setting-item-description { margin-top: 4px; color: var(--text-muted); }
+.setting-item-description:empty { display: none; }
+.setting-item-control { display: flex; align-items: center; justify-content: flex-end; }
+.checkbox-container { width: 32px; height: 18px; padding: 2px; border-radius: 12px; background: var(--text-faint); }
+.checkbox-container:after { content: ''; display: block; width: 14px; height: 14px; border-radius: 50%; background: white; }
+.checkbox-container.is-enabled { background: var(--interactive-accent); }
+.checkbox-container.is-enabled:after { transform: translateX(14px); }
+.demo-notice { position: fixed; right: 24px; bottom: 24px; z-index: 20; background: var(--background-secondary); color: var(--text-normal); padding: 12px 16px; border: 1px solid var(--background-modifier-border); border-radius: 8px; max-width: 400px; }

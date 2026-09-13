@@ -1,5 +1,6 @@
 import {Component, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile} from 'obsidian';
 import {StudioPanel} from './panel';
+import {obsidianUI} from './obsidian-ui';
 import {normalizeSettings, type Settings} from './settings';
 import {prepareMarkdown} from './template';
 import DOMPurify from 'dompurify';
@@ -19,7 +20,7 @@ export default class PrintStudioPlugin extends Plugin {
 }
 class PrintSettings extends PluginSettingTab {
   constructor(private plugin:PrintStudioPlugin){super(plugin.app,plugin);}
-  display(){this.containerEl.empty();new Setting(this.containerEl).setName('Print Studio').setHeading();this.containerEl.createEl('p',{text:'Create reusable letterheads and print layouts from the preview. Presets and logos are stored locally in this vault’s plugin settings.'});new Setting(this.containerEl).setName('Open print designer').setDesc('Open a Markdown note first, then customize its pages, branding, headers, and footers.').addButton(button=>button.setButtonText('Open Print Studio').onClick(()=>{const file=this.app.workspace.getActiveFile();if(file?.extension==='md')this.plugin.openStudio(file);else new Notice('Open a Markdown note first.');}));this.containerEl.createEl('p',{text:'Print Studio has its own command. It does not modify Obsidian’s built-in PDF export or your original note.'});}
+  display(){this.containerEl.empty();this.containerEl.createEl('p',{text:'Create reusable letterheads and print layouts from the preview. Presets and logos are stored locally in this vault’s plugin settings.'});new Setting(this.containerEl).setName('Print preview').setDesc('Open a Markdown note first, then customize its pages, branding, headers, and footers.').addButton(button=>button.setButtonText('Open Print Studio').onClick(()=>{const file=this.app.workspace.getActiveFile();if(file?.extension==='md')this.plugin.openStudio(file);else new Notice('Open a Markdown note first.');}));this.containerEl.createEl('p',{text:'Print Studio has its own command. It does not modify Obsidian’s built-in PDF export or your original note.'});}
 }
 class PrintModal extends Modal {
   private panel?:StudioPanel;
@@ -29,7 +30,7 @@ class PrintModal extends Modal {
   private renderComponent?:Component;
   private isClosed=false;
   constructor(private plugin:PrintStudioPlugin,private file:TFile,private closed:()=>void){super(plugin.app);}
-  onOpen(){this.modalEl.addClass('ps-modal');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'ps-render-source markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e);}});})});}
+  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'ps-render-source markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e);}});})});}
   private async renderNote(){
     if(this.isClosed)throw new Error('Print preview was closed.');
     const view=this.app.workspace.getActiveViewOfType(MarkdownView);

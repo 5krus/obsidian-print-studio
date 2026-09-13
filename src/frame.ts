@@ -38,7 +38,7 @@ async function run() {
   document.querySelector('#ps-loading')?.remove();
   const fit=()=>{const stack=document.querySelector<HTMLElement>('.pagedjs_pages');if(stack) stack.style.zoom=String(Math.min(1,Math.max(.2,(innerWidth-32)/(paperSize(job.preset)[0]*96/25.4+48))));};
   fit();window.addEventListener('resize',fit);
-  window.addEventListener('message',event=>{if(event.source!==parent || event.data?.token!==job.token) return;if(event.data.type==='print') {window.focus();window.print();} if(event.data.type==='export') send('exported',{html:'<!doctype html>\n'+document.documentElement.outerHTML.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'')});});
+  window.addEventListener('message',event=>{if(event.source!==parent || event.data?.token!==job.token) return;if(event.data.type==='theme') document.documentElement.style.colorScheme=event.data.scheme==='dark'?'dark':'light';if(event.data.type==='print') {window.focus();window.print();} if(event.data.type==='export') send('exported',{html:'<!doctype html>\n'+document.documentElement.outerHTML.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'')});});
   send('ready',{pages:pages.total});
 }
 run().catch(error=>{document.querySelector('#ps-loading')!.textContent='Could not paginate this document.';send('error',{message:error instanceof Error?error.message:String(error)});});

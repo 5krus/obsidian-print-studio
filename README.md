@@ -13,6 +13,8 @@ The installed folder must contain `manifest.json`, `main.js`, and `styles.css` d
 
 ## Design your document
 
+The interface uses Obsidian’s native controls, icons, interface font, and theme colors, including light and dark mode and your chosen accent color. The printed document uses your preset’s own typography and colors.
+
 The left sidebar controls your layout; the preview shows the actual paginated document. Edits to a preset save automatically in this vault. Duplicate a preset to create a separate company, client, or document style.
 
 - **Identity:** company name and a PNG, JPG, WebP, or SVG logo. Logos are embedded in the preset so the document is self-contained. SVG logos are sanitized and rasterized when imported.
@@ -77,7 +79,7 @@ npm run demo      # http://localhost:5184
 npm run package   # installable release folder + ZIP
 ```
 
-The browser demo uses the **same designer, sanitization, pagination runtime, and print styles** as the plugin. Only its Markdown source adapter differs: the demo renders a bundled sample with Marked, while the plugin uses Obsidian.
+The browser demo uses the **same designer, sanitization, pagination runtime, and print styles** as the plugin, with lightweight stand-ins for Obsidian’s native UI components. Use `?theme=light` for its light appearance. Its Markdown source adapter also differs: the demo renders a bundled sample with Marked, while the plugin uses Obsidian.
 
 `npm run dev` watches the plugin bundle. Restart the build after changing `src/frame.ts` or any of its imports because the sandbox runtime is bundled separately.
 
@@ -91,6 +93,8 @@ This release has not yet been tested inside a live Obsidian vault or against a p
 
 - `src/main.ts` — Obsidian commands, modal lifecycle, note rendering, and attachment inlining.
 - `src/panel.ts` — reusable designer UI and preview lifecycle.
+- `src/obsidian-ui.ts` — native Obsidian settings, controls, icons, and confirmation dialog.
+- `src/ui.ts`, `demo/ui.ts` — UI adapter contract and standalone demo controls.
 - `src/frame.ts` — isolated Paged.js pagination, repeated page furniture, print/export actions.
 - `src/document.ts` — sanitized print document and physical page CSS.
 - `src/settings.ts`, `src/template.ts` — portable presets, validation, and dynamic text.
