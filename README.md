@@ -10,8 +10,6 @@ Turn Markdown notes into branded, paginated documents with logos, headers, foote
 
 In Obsidian, open **Settings → Community plugins → Browse**, search for **Print Studio**, then select **Install** and **Enable**. Community plugins require Restricted mode to be off. Updates are available from the same settings page.
 
-For manual installation, download `main.js`, `manifest.json`, and `styles.css` from [GitHub Releases](https://github.com/5krus/obsidian-print-studio/releases/latest) into `<your-vault>/.obsidian/plugins/print-studio/`, reload Obsidian, and enable the plugin. When updating manually, keep your existing `data.json`.
-
 ## Use
 
 Open a note and run **Print Studio: Preview & print current note**, click the printer ribbon icon, or right-click a note and choose **Open in Print Studio**.
