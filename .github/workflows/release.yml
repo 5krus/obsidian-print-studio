@@ -1,0 +1,84 @@
+name: Prepare attested release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-draft
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Lint, unit tests, and build
+        run: npm run check
+      - name: Install browser and PDF tools
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils zip
+      - name: Validate preview and PDF output
+        run: |
+          node scripts/build-tests.mjs
+          npx playwright test
+      - name: Package and validate release version
+        id: version
+        run: |
+          node scripts/notices.mjs
+          node scripts/package.mjs
+          VERSION=$(node -p "require('./manifest.json').version")
+          printf 'version=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Attest installer assets
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            release/print-studio/main.js
+            release/print-studio/manifest.json
+            release/print-studio/styles.css
+      - name: Create draft with only supported installer files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$RELEASE_VERSION" \
+            release/print-studio/main.js \
+            release/print-studio/manifest.json \
+            release/print-studio/styles.css \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Print Studio $RELEASE_VERSION" \
+            --notes-file "docs/release-$RELEASE_VERSION.md" \
+            --draft
+      - name: Keep local-install ZIP outside GitHub Releases
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: print-studio-local-package
+          path: print-studio-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Keep validation results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-validation
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

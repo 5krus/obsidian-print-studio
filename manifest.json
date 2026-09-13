@@ -1,7 +1,7 @@
 {
   "id": "print-studio",
   "name": "Print Studio",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minAppVersion": "1.13.0",
   "description": "Turn notes into branded, print-ready documents with page borders, logos, reusable presets, headers, and footers.",
   "author": "Eryk Krusinski",

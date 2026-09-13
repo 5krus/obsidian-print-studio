@@ -1,9 +1,10 @@
-import {Component, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
+import {Component, getLinkpath, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
 import {StudioPanel} from './panel';
 import {obsidianUI} from './obsidian-ui';
 import {normalizeSettings, type Settings} from './settings';
 import {prepareMarkdown} from './template';
 import DOMPurify from 'dompurify';
+import {resolveVaultImage} from './attachments';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
   private studios=new Set<PrintModal>();
@@ -51,13 +52,13 @@ class PrintModal extends Modal {
     await MarkdownRenderer.render(this.app,prepareMarkdown(markdown),root,this.file.path,this.renderComponent);
     if(this.isClosed)throw new Error('Print preview was closed.');
     const warnings:string[]=[];
-    const files=this.app.vault.getFiles().filter(f=>/^(png|jpe?g|webp|gif|svg)$/i.test(f.extension));
-    const resourceMap=new Map(files.map(f=>[this.app.vault.getResourcePath(f).split('?')[0],f]));
+    const noteResource=this.app.vault.getResourcePath(this.file);
+    const lookup={byPath:(path:string)=>this.app.vault.getFileByPath(path),byLink:(link:string)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),this.file.path)};
     let missing=0;
     for(const img of root.querySelectorAll('img')){
       const src=img.getAttribute('src')??'';if(src.startsWith('data:'))continue;
-      const f=resourceMap.get(src.split('?')[0]) ?? this.app.metadataCache.getFirstLinkpathDest(img.getAttribute('data-href') ?? src,this.file.path);
-      if(!f || !/^(png|jpe?g|webp|gif|svg)$/i.test(f.extension)){missing++;continue;}
+      const f=resolveVaultImage(img,noteResource,this.file.path,lookup);
+      if(!f){missing++;continue;}
       try {const data=await this.app.vault.readBinary(f);if(data.byteLength>10_000_000){missing++;continue;}
         if(f.extension.toLowerCase()==='svg'){const clean=DOMPurify.sanitize(new TextDecoder().decode(data),{USE_PROFILES:{svg:true,svgFilters:true},FORBID_TAGS:['foreignObject','image','use','style'],FORBID_ATTR:['style']});img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(clean);}
         else {const mime=f.extension.toLowerCase().replace('jpg','jpeg');img.src=`data:image/${mime};base64,${Buffer.from(data).toString('base64')}`;}

@@ -1,5 +1,13 @@
 # Print Studio validation
 
+## 0.3.1 review follow-up
+
+- Local lint, all 32 unit tests, TypeScript, and build pass.
+- Five attachment-resolution tests cover precise resource paths, encoded names, Windows-style resource URI fixtures, relative Markdown images, unsaved wiki embeds, missing files, unsupported types, and rejection of external/out-of-vault paths. These are fixture tests, not a native Windows validation claim.
+- Source no longer calls vault-wide file enumeration APIs. Images use targeted file or link lookups against the rendered note's references.
+- The manual release workflow requires all 13 browser/PDF tests to pass before it attests the three installer assets and creates the draft. The workflow run records the tested source commit and provenance; published files should be verified with `gh attestation verify` as described in the README.
+- Native testing of the new attachment resolver remains a manual check. The native validation below applies to 0.2.0.
+
 ## 0.3.0 submission candidate
 
 Validated on 13 September 2026:

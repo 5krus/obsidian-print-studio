@@ -6,8 +6,8 @@ Give your notes a proper letterhead. Print Studio is a desktop Obsidian plugin t
 
 Requires **desktop Obsidian 1.13.0 or newer**.
 
-1. Download `print-studio-0.3.0.zip` from [GitHub Releases](https://github.com/5krus/obsidian-print-studio/releases), or run `npm ci` and `npm run package` to build it. Extract the `print-studio` folder.
-2. Put that folder in `<your-vault>/.obsidian/plugins/print-studio/`.
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest published [GitHub Release](https://github.com/5krus/obsidian-print-studio/releases).
+2. Create `<your-vault>/.obsidian/plugins/print-studio/` and put those three files directly inside it. For a local ZIP build instead, run `npm ci` and `npm run package`, then extract the `print-studio` folder into your vault's `.obsidian/plugins/` directory.
 3. In Obsidian, reload the app and enable **Print Studio** under **Settings → Community plugins**. If Restricted mode is on, enable community plugins first.
 4. Open a Markdown note. Run **Print Studio: Preview & print current note** from the command palette, click the printer ribbon icon, or right-click a note and select **Open in Print Studio**.
 
@@ -84,6 +84,7 @@ Choose **Print / Save PDF** after pagination finishes. Select a printer or your 
 
 - Standard headings, paragraphs, emphasis, lists, tables, blockquotes, task states, code blocks, links, and vault image attachments are supported. Print typography is intentionally independent of the active Obsidian theme.
 - Remote, missing, or attachments larger than 10 MB become labeled placeholders in the self-contained document. Use image attachments in the vault for reliable offline output. The preview reports omitted images.
+- Image lookup uses references in the rendered note and targeted Obsidian file lookups. Print Studio does not enumerate all files or Markdown notes in the vault.
 - Obsidian renders the note before the isolated print frame is created. Obsidian and enabled Markdown plugins may load remote resources during that initial rendering stage. Print Studio adds no network service of its own. The generated print frame itself blocks network access and receives sanitized static content.
 - Interactive plugin blocks, delayed Dataview output, embedded notes/PDFs, and complex MathJax/Mermaid rendering are not guaranteed to match Obsidian. Check the preview; support for those is not claimed in this MVP.
 - Very long unbreakable table rows or unusual HTML blocks may need manual page breaks or simpler formatting. Oversized images are constrained to the printable area.
@@ -129,6 +130,8 @@ PDF artifacts are written under `test-results/`. See [community submission prepa
 
 GitHub Actions runs lint, unit tests, the build, browser/PDF checks, and packaging on pushes to `main` and pull requests. The workflow retains validation output and installable artifacts for review.
 
+From 0.3.1, the manual **Prepare attested release** workflow builds and signs provenance attestations for all three installer files, then creates a draft release. Release attachments contain only `main.js`, `manifest.json`, and `styles.css`; convenience ZIPs stay in local builds and Actions artifacts. Verify a downloaded file with `gh attestation verify main.js --repo 5krus/obsidian-print-studio --signer-workflow 5krus/obsidian-print-studio/.github/workflows/release.yml` (substitute `styles.css` or `manifest.json` as needed). See [GitHub's attestation documentation](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations).
+
 ## Support and license
 
 Report problems or request features in [GitHub Issues](https://github.com/5krus/obsidian-print-studio/issues). Include your Obsidian version, operating system, paper layout, and a minimal example note with sensitive information removed.
@@ -138,6 +141,7 @@ Print Studio is free and released under the [MIT license](LICENSE). Bundled depe
 ## Structure
 
 - `src/main.ts` — Obsidian commands, modal lifecycle, note rendering, and attachment inlining.
+- `src/attachments.ts` — targeted image resolution without enumerating vault files.
 - `src/panel.ts` — reusable designer UI and preview lifecycle.
 - `src/obsidian-ui.ts` — native Obsidian settings, controls, icons, and confirmation dialog.
 - `src/ui.ts`, `demo/ui.ts` — UI adapter contract and standalone demo controls.
