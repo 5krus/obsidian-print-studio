@@ -1,6 +1,8 @@
+export interface LayoutWarning {page:number;kind:'header'|'footer'|'table'|'content'}
 export type FrameMessage =
   | {type:'ready'; token:string; pages:number}
   | {type:'viewport'; token:string; page:number}
+  | {type:'warnings'; token:string; warnings:LayoutWarning[]}
   | {type:'error'; token:string; message:string}
   | {type:'exported'; token:string; html:string};
 export type FrameCommand =
@@ -15,6 +17,15 @@ export function frameMessage(data:unknown):FrameMessage|undefined {
   const token=value.token;
   if(value.type==='ready' && pageNumber(value.pages))return {type:'ready',token,pages:value.pages};
   if(value.type==='viewport' && pageNumber(value.page))return {type:'viewport',token,page:value.page};
+  if(value.type==='warnings' && Array.isArray(value.warnings) && value.warnings.length<=200) {
+    const warnings:LayoutWarning[]=[];
+    for(const item of value.warnings) {
+      const warning=record(item);
+      if(!warning || !pageNumber(warning.page) || !['header','footer','table','content'].includes(String(warning.kind)))return;
+      warnings.push({page:warning.page,kind:warning.kind as LayoutWarning['kind']});
+    }
+    return {type:'warnings',token,warnings};
+  }
   if(value.type==='error' && typeof value.message==='string')return {type:'error',token,message:value.message.slice(0,1000)};
   if(value.type==='exported' && typeof value.html==='string')return {type:'exported',token,html:value.html};
 }

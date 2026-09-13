@@ -6,12 +6,12 @@ Give your notes a proper letterhead. Print Studio is a desktop Obsidian plugin t
 
 Requires **desktop Obsidian 1.13.0 or newer**.
 
-1. Download `print-studio-0.2.0.zip` from the [0.2.0 release](https://github.com/5krus/obsidian-print-studio/releases/tag/0.2.0), or run `npm run package` and extract the `print-studio` folder.
+1. Download `print-studio-0.3.0.zip` from [GitHub Releases](https://github.com/5krus/obsidian-print-studio/releases), or run `npm ci` and `npm run package` to build it. Extract the `print-studio` folder.
 2. Put that folder in `<your-vault>/.obsidian/plugins/print-studio/`.
 3. In Obsidian, reload the app and enable **Print Studio** under **Settings → Community plugins**. If Restricted mode is on, enable community plugins first.
 4. Open a Markdown note. Run **Print Studio: Preview & print current note** from the command palette, click the printer ribbon icon, or right-click a note and select **Open in Print Studio**.
 
-The installed folder must contain `manifest.json`, `main.js`, and `styles.css` directly. This independent plugin is not yet listed in Obsidian’s community directory. The repository is currently private; sign in to GitHub with an account that has access to download the release. When updating, replace the plugin files while keeping your existing `data.json`.
+The installed folder must contain `manifest.json`, `main.js`, and `styles.css` directly. This independent plugin is not yet listed in Obsidian’s community directory; use manual installation until its listing is published. When updating, replace the plugin files while keeping your existing `data.json`.
 
 ![Print Studio in Obsidian dark mode](docs/print-studio-dark.png)
 
@@ -21,10 +21,13 @@ The interface uses Obsidian’s native controls, icons, interface font, and them
 
 The left sidebar controls your layout; the preview shows the actual paginated document. Edits to a preset save automatically in this vault. Duplicate a preset to create a separate company, client, or document style.
 
+Use **Undo change** and **Redo change** below the preset controls to step through up to 20 changes while the studio is open. Consecutive typing is grouped into a single step. History includes imports, duplication, removal, and preset selection, and clears when you close the studio. Restored settings save automatically.
+
 - **Identity:** company name and a PNG, JPG, WebP, or SVG logo. Logos are embedded in the preset so the document is self-contained. SVG logos are sanitized and rasterized when imported.
 - **Paper & typography:** A4 or US Letter, portrait or landscape, page margins, serif or sans-serif typography, font size, and line spacing.
 - **Borders & color:** no border, fine line, double line, or dashed border; adjustable thickness and accent color.
 - **Header and footer:** independent left, center, and right text, plus optional dividing rules. Content repeats on every physical page.
+- **First page:** optionally use a separate header, larger top margin and logo, and a wider left branding slot on page 1. Subsequent pages use the regular header. You can also show the logo only on the first page; footers continue to repeat.
 - **Dynamic text:** note title, company, date, vault, note properties, and actual page numbers.
 
 ### Move or back up presets
@@ -36,6 +39,10 @@ The **Export…** menu offers **Current preset** and **All presets**. Exports in
 ### Preview navigation
 
 Use the previous/next arrows or type a page number to jump through the preview. Choose **Fit width** or a zoom level from **50% to 200%**. Scrolling updates the page number. Zoom affects only the preview; exported HTML and printed pages retain their actual paper size.
+
+Layout changes and refreshes retain your current page and zoom. If the document becomes shorter, the preview moves to its last available page. Layout edits reuse the rendered note and embedded attachments for faster updates; use **Refresh note** to pick up changes to the note, properties, or attachments.
+
+After pagination, **layout warnings** below the preview identify clipped header/footer text, overflowing blocks, and table rows that overflow or span pages. Each warning links to the affected page and suggests a correction. Warnings are advisory and do not appear in the printed or exported document. They cover measurable overflow, not every rendering problem; check complex content in the preview.
 
 ### Placeholders
 
@@ -50,6 +57,8 @@ Use the previous/next arrows or type a page number to jump through the preview. 
 | `{{meta:client}}` | A scalar frontmatter property; replace `client` with your property name |
 
 For example, set a footer to `Prepared for {{meta:client}}` and the opposite footer to `{{page}} / {{pages}}`. Missing note properties render as empty text. Unknown placeholders remain visible so typos are easy to notice. Header/footer values are plain text, never executable HTML.
+
+Each header/footer field has an **Insert placeholder…** picker, including the first-page header. Choose a built-in value or one of the note's text, number, or boolean properties to insert it at the cursor or replace selected text. Refresh the note to update the available properties.
 
 ### Page breaks
 
@@ -78,8 +87,9 @@ Choose **Print / Save PDF** after pagination finishes. Select a printer or your 
 - Obsidian renders the note before the isolated print frame is created. Obsidian and enabled Markdown plugins may load remote resources during that initial rendering stage. Print Studio adds no network service of its own. The generated print frame itself blocks network access and receives sanitized static content.
 - Interactive plugin blocks, delayed Dataview output, embedded notes/PDFs, and complex MathJax/Mermaid rendering are not guaranteed to match Obsidian. Check the preview; support for those is not claimed in this MVP.
 - Very long unbreakable table rows or unusual HTML blocks may need manual page breaks or simpler formatting. Oversized images are constrained to the printable area.
-- Very long header/footer values can be clipped by the reserved band. Keep the text short or increase its corresponding margin.
+- Very long header/footer values can be clipped by the reserved band. Layout warnings highlight detected clipping; keep the text short or increase its corresponding margin (the first-page top margin for a separate letterhead).
 - Desktop only. No cloud services, analytics, API keys, or paid dependencies are required. Presets and logos live in the plugin’s `data.json`; vault synchronization may synchronize that file according to your own setup.
+- File access outside the vault is limited to logo and preset files you explicitly select in the file picker, and exports you save through the app/browser download mechanism. Print Studio does not scan folders outside your vault.
 
 ## Development
 
@@ -102,6 +112,8 @@ Automated tests cover settings recovery, page geometry, templates, metadata, fro
 
 Version 0.2.0 has been tested in **Obsidian 1.13.7 on Linux**, including native controls, pagination, page navigation, theme changes, and HTML export. Automated browser tests generate PDFs for A4 and Letter in both orientations and check page dimensions, complete content, image decoding, checklists, manual page breaks, and page furniture. See the [validation report](docs/VALIDATION.md).
 
+Version 0.3.0 adds tests for page preservation, note caching and refresh races, preset undo/redo, placeholder insertion, old preset imports, and overflow warnings. The browser/PDF suite also checks separate first-page letterheads in all four paper/orientation combinations. Native Obsidian validation recorded above applies to 0.2.0; a native smoke test of 0.3.0 remains outstanding.
+
 No physical printer is configured on the development machine. Physical paper output and Windows/macOS system print dialogs remain unverified.
 
 To run the browser/PDF suite, install Chromium and Poppler (`pdfinfo`, `pdftotext`):
@@ -115,6 +127,14 @@ CHROMIUM_PATH=/path/to/chromium npm run test:browser
 
 PDF artifacts are written under `test-results/`. See [community submission preparation](docs/COMMUNITY_SUBMISSION.md) for the remaining publishing steps.
 
+GitHub Actions runs lint, unit tests, the build, browser/PDF checks, and packaging on pushes to `main` and pull requests. The workflow retains validation output and installable artifacts for review.
+
+## Support and license
+
+Report problems or request features in [GitHub Issues](https://github.com/5krus/obsidian-print-studio/issues). Include your Obsidian version, operating system, paper layout, and a minimal example note with sensitive information removed.
+
+Print Studio is free and released under the [MIT license](LICENSE). Bundled dependency licenses and attribution are in [Third-party notices](THIRD_PARTY_NOTICES.md).
+
 ## Structure
 
 - `src/main.ts` — Obsidian commands, modal lifecycle, note rendering, and attachment inlining.
@@ -124,6 +144,7 @@ PDF artifacts are written under `test-results/`. See [community submission prepa
 - `src/frame.ts` — isolated Paged.js pagination, repeated page furniture, print/export actions.
 - `src/document.ts` — sanitized print document and physical page CSS.
 - `src/presets.ts`, `src/messages.ts` — validated preset transfers and frame communication.
+- `src/history.ts`, `src/layout-warnings.ts` — bounded preset undo/redo and paginated overflow checks.
 - `src/settings.ts`, `src/template.ts` — portable presets, validation, and dynamic text.
 
 Built with [Obsidian’s public plugin API](https://github.com/obsidianmd/obsidian-api), [Paged.js](https://github.com/pagedjs/pagedjs), and [DOMPurify](https://github.com/cure53/DOMPurify). See `THIRD_PARTY_NOTICES.md` for bundled dependency licenses.

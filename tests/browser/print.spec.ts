@@ -2,10 +2,10 @@ import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 
-for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landscape']) {
-  test(`${paper} ${orientation}: all content and page furniture survive PDF export`,async({page,browser},testInfo)=>{
+for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landscape'])for(const firstPage of [false,true]) {
+  test(`${paper} ${orientation}${firstPage?' first-page letterhead':''}: all content and page furniture survive PDF export`,async({page,browser},testInfo)=>{
     const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-    await page.goto(`/test.html?paper=${paper}&orientation=${orientation}`);
+    await page.goto(`/test.html?paper=${paper}&orientation=${orientation}${firstPage?'&firstPage':''}`);
     await expect(page.getByRole('status')).toContainText('Ready to print');
     const preview=page.frameLocator('.ps-frame');
     const pages=await preview.locator('.pagedjs_page').count();
@@ -13,7 +13,14 @@ for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landsca
     expect(await preview.locator('.ps-check').allTextContents()).toEqual(['☑\uFE0E','☐']);
     await expect(preview.locator('.ps-page-header')).toHaveCount(pages);
     await expect(preview.locator('.ps-page-footer')).toHaveCount(pages);
-    await expect(preview.locator('.ps-logo')).toHaveCount(pages);
+    await expect(preview.locator('.ps-logo')).toHaveCount(firstPage?1:pages);
+    await expect(page.locator('.ps-warning')).toHaveCount(0);
+    if(firstPage) {
+      await expect(preview.locator('.ps-page-header').first()).toContainText('FIRST-PAGE HEADER');
+      await expect(preview.locator('.ps-page-header').first()).toContainText('Acme');
+      const tops=await preview.locator('.pagedjs_area').evaluateAll(areas=>areas.slice(0,2).map(area=>area.getBoundingClientRect().top-area.closest('.pagedjs_page')!.getBoundingClientRect().top));
+      expect(tops[0]-tops[1]).toBeGreaterThan(70);
+    }
     expect(await preview.locator('img').evaluateAll(images=>images.every(img=>(img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth>0))).toBe(true);
     const manual=preview.getByRole('heading',{name:'MANUAL-BREAK-START'});
     expect(await manual.evaluate(el=>{const area=el.closest('.pagedjs_area')!;return el.getBoundingClientRect().top-area.getBoundingClientRect().top;})).toBeLessThan(10);
@@ -43,7 +50,8 @@ for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landsca
     for(let i=1;i<=12;i++)expect(text.match(new RegExp(`PARAGRAPH-${String(i).padStart(3,'0')}`,'g'))).toHaveLength(1);
     expect(text).toContain('END-OF-DOCUMENT');
     const furniture=execFileSync('pdftotext',['-raw',pdf,'-'],{encoding:'utf8'}).replace(/\s+/g,' ');
-    expect(furniture.match(/PRINT-CHECK HEADER/g)).toHaveLength(pages);
+    expect(furniture.match(/PRINT-CHECK HEADER/g)).toHaveLength(firstPage?pages-1:pages);
+    if(firstPage)expect(furniture.match(/FIRST-PAGE HEADER/g)).toHaveLength(1);
     expect(furniture.match(/PRINT-CHECK FOOTER/g)).toHaveLength(pages);
     for(let i=1;i<=pages;i++)expect(text).toMatch(new RegExp(`${i}\\s*/\\s*${pages}`));
     expect(text).toContain('Completed checklist item');expect(text).toContain('Pending checklist item');
@@ -73,6 +81,48 @@ test('preset transfers, navigation, theme changes and narrow layouts',async({pag
   await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{}')});
   await expect.poll(()=>page.evaluate(()=>window.testNotices.at(-1))).toContain('not supported');
   await expect(page.getByRole('combobox',{name:'Preset',exact:true}).locator('option')).toHaveCount(4);
+});
+
+test('layout changes retain the page and use cached note content; refresh rereads it',async({page})=>{
+  await page.goto('/test.html');await expect(page.getByRole('status')).toContainText('Ready to print');
+  const current=page.getByRole('spinbutton',{name:'Page',exact:true});
+  await current.fill('3');await current.press('Enter');
+  await page.getByRole('textbox',{name:'Company name',exact:true}).fill('Updated company');
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await expect(current).toHaveValue('3');expect(await page.evaluate(()=>window.testReads)).toBe(1);
+  const top=await page.frameLocator('.ps-frame').locator('.pagedjs_page').nth(2).evaluate(el=>el.getBoundingClientRect().top);
+  expect(Math.abs(top)).toBeLessThan(3);
+  await page.getByRole('button',{name:'Refresh note',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  expect(await page.evaluate(()=>window.testReads)).toBe(2);await expect(current).toHaveValue('3');
+});
+
+test('clipped furniture and oversized table rows produce page links and useful advice',async({page})=>{
+  await page.goto('/test.html?overflow');await expect(page.getByRole('status')).toContainText('Ready to print');
+  const warnings=page.locator('.ps-warning');
+  await expect(warnings.filter({hasText:'Header text or logo is clipped'}).first()).toBeVisible();
+  await expect(warnings.filter({hasText:'Footer text is clipped'}).first()).toBeVisible();
+  await expect(warnings.filter({hasText:'A table row overflows'}).first()).toBeVisible();
+  const link=warnings.filter({hasText:'A table row overflows'}).first().getByRole('button');
+  const number=(await link.innerText()).replace('Page ','');await link.click();
+  await expect(page.getByRole('spinbutton',{name:'Page',exact:true})).toHaveValue(number);
+});
+
+test('first-page controls, placeholder insertion, and undo/redo work together',async({page})=>{
+  await page.goto('/test.html');await expect(page.getByRole('status')).toContainText('Ready to print');
+  await page.locator('[data-section="First page"] summary').click();
+  await page.getByRole('switch',{name:'Different first-page header',exact:true}).click();
+  await expect(page.getByRole('switch',{name:'Different first-page header',exact:true})).toBeFocused();
+  const first=page.locator('[data-section="First page"]');
+  await first.getByRole('textbox',{name:'Left',exact:true}).fill('For ');
+  await first.getByRole('combobox',{name:'Insert placeholder into First page left',exact:true}).selectOption('{{meta:client}}');
+  await expect(first.getByRole('textbox',{name:'Left',exact:true})).toHaveValue('For {{meta:client}}');
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await expect(page.frameLocator('.ps-frame').locator('.ps-page-header').first()).toContainText('For Acme');
+  await page.getByRole('button',{name:'Undo change',exact:true}).click();
+  await expect(first.getByRole('textbox',{name:'Left',exact:true})).toHaveValue('For ');
+  await page.getByRole('button',{name:'Redo change',exact:true}).click();
+  await expect(first.getByRole('textbox',{name:'Left',exact:true})).toHaveValue('For {{meta:client}}');
 });
 
 test('pagination completes when the host stops delivering animation frames',async({page})=>{

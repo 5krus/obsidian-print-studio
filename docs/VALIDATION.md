@@ -1,4 +1,19 @@
-# Print Studio 0.2.0 validation
+# Print Studio validation
+
+## 0.3.0 submission candidate
+
+Validated on 13 September 2026:
+
+- Full lint, 27 unit tests, TypeScript/build, and local ZIP packaging pass.
+- All 13 browser tests pass using installed Chromium, including eight PDF cases covering A4/Letter, portrait/landscape, and regular/separate first-page letterheads.
+- PDF checks verify page dimensions and counts, all content markers, headers and footers, page totals, decoded images, and first-page-only branding.
+- New checks exercise cached source reads, concurrent refreshes and failure recovery, retained/clamped page navigation, bounded undo/redo, placeholder selection replacement, legacy preset imports, clipped header/footer warnings, and split table row warnings.
+- Standard PDF fixtures produce no layout warnings. Oversized-row and clipped-furniture fixtures produce actionable page links.
+- The final submission-candidate run passes all 13 browser tests, including keyboard focus after toggling the first-page header and undo/redo interactions. The earlier browser setup timeout was resolved by rerunning after machine load returned to normal.
+
+This build has not yet been smoke-tested in native Obsidian or on physical paper. The native validation below applies to 0.2.0. Windows/macOS print dialogs remain unverified.
+
+## 0.2.0 validation
 
 Validation performed on 13 September 2026.
 

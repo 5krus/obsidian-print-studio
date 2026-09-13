@@ -6,6 +6,8 @@ export interface Preset {
   border: 'none' | 'solid' | 'double' | 'dashed'; borderWidth: number; color: string;
   font: 'sans' | 'serif'; fontSize: number; lineHeight: number; logoHeight: number;
   header: Slots; footer: Slots; headerRule: boolean; footerRule: boolean; headingBreaks: boolean;
+  differentFirstPage: boolean; firstPageMarginTop: number; firstPageLogoHeight: number;
+  firstPageHeader: Slots; firstPageHeaderRule: boolean; logoFirstPageOnly: boolean;
 }
 export interface Settings {version: 1; activeId: string; presets: Preset[]}
 export const DEFAULT_PRESET: Preset = {
@@ -15,6 +17,8 @@ export const DEFAULT_PRESET: Preset = {
   lineHeight: 1.55, logoHeight: 9, header: {left: '{{company}}', center: '', right: '{{title}}'},
   footer: {left: '{{company}}', center: '{{date}}', right: '{{page}} / {{pages}}'},
   headerRule: true, footerRule: true, headingBreaks: false,
+  differentFirstPage: false, firstPageMarginTop: 42, firstPageLogoHeight: 18,
+  firstPageHeader: {left: '{{company}}', center: '', right: '{{title}}'}, firstPageHeaderRule: true, logoFirstPageOnly: false,
 };
 export function defaults(): Settings {
   return {version: 1, activeId: 'classic', presets: [structuredClone(DEFAULT_PRESET),
@@ -36,7 +40,9 @@ export function normalizePreset(input: unknown): Preset {
     border: ['none','solid','double','dashed'].includes(String(v.border)) ? v.border as Preset['border'] : d.border,
     borderWidth: num(v.borderWidth,d.borderWidth,0.3,3), color: typeof v.color === 'string' && /^#[a-f\d]{6}$/i.test(v.color) ? v.color : d.color,
     font: v.font === 'serif' ? 'serif' : 'sans', fontSize:num(v.fontSize,d.fontSize,8,18), lineHeight:num(v.lineHeight,d.lineHeight,1.2,2), logoHeight:num(v.logoHeight,d.logoHeight,4,12),
-    header:slots(v.header,d.header), footer:slots(v.footer,d.footer), headerRule:bool(v.headerRule,d.headerRule), footerRule:bool(v.footerRule,d.footerRule), headingBreaks:bool(v.headingBreaks,d.headingBreaks)};
+    header:slots(v.header,d.header), footer:slots(v.footer,d.footer), headerRule:bool(v.headerRule,d.headerRule), footerRule:bool(v.footerRule,d.footerRule), headingBreaks:bool(v.headingBreaks,d.headingBreaks),
+    differentFirstPage:bool(v.differentFirstPage,d.differentFirstPage), firstPageMarginTop:num(v.firstPageMarginTop,d.firstPageMarginTop,22,70), firstPageLogoHeight:num(v.firstPageLogoHeight,d.firstPageLogoHeight,4,30),
+    firstPageHeader:slots(v.firstPageHeader,d.firstPageHeader), firstPageHeaderRule:bool(v.firstPageHeaderRule,d.firstPageHeaderRule), logoFirstPageOnly:bool(v.logoFirstPageOnly,d.logoFirstPageOnly)};
 }
 export function normalizeSettings(input: unknown): Settings {
   const v=obj(input); if (!Array.isArray(v.presets) || !v.presets.length) return defaults();

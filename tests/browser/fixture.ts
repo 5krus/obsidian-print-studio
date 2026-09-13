@@ -16,13 +16,21 @@ preset.footer.left='PRINT-CHECK FOOTER';
 preset.footer.center='{{company}}';
 preset.footer.right='{{page}} / {{pages}}';
 preset.logo=TEST_IMAGE;
-const markdown=validationMarkdown(preset.logo);
+if(query.has('firstPage')) {
+  preset.differentFirstPage=true;preset.firstPageMarginTop=55;preset.firstPageLogoHeight=25;preset.logoFirstPageOnly=true;
+  preset.firstPageHeader={left:'FIRST-PAGE HEADER',center:'',right:'{{meta:client}}'};
+}
+if(query.has('overflow')) {
+  preset.header.left='Long header text '.repeat(17);preset.footer.right='Long footer text '.repeat(17);
+}
+const markdown=query.has('overflow')?'<h1>Oversized row</h1><table><tr><td>'+Array.from({length:100},(_,i)=>`Line ${i}<br>`).join('')+'</td></tr></table>':validationMarkdown(preset.logo);
+window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
-  source:async()=>({html:await marked.parse(prepareMarkdown(markdown)),context:{title:'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{}},warnings:[]}),
+  source:async()=>{window.testReads++;return {html:await marked.parse(prepareMarkdown(markdown)),context:{title:'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
-declare global {interface Window {testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;}}
+declare global {interface Window {testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;testReads:number;}}
 window.testPanel=panel;window.testNotices=[];
 window.addEventListener('message',event=>{if(event.data?.type==='exported')window.testExport=event.data.html;if(event.data?.type==='ready')window.testPages=event.data.pages;});

@@ -6,4 +6,6 @@ test('frame communication rejects malformed messages and impossible navigation v
   for(const data of [{type:'page',token:'t',page:-1},{type:'page',token:'t',page:Infinity},{type:'zoom',token:'t',value:'9999'},{type:'theme',token:'t',scheme:'red'}])assert.equal(frameCommand(data),undefined);
   assert.deepEqual(frameMessage({type:'ready',token:'t',pages:3}),{type:'ready',token:'t',pages:3});
   assert.deepEqual(frameCommand({type:'zoom',token:'t',value:'fit'}),{type:'zoom',token:'t',value:'fit'});
+  for(const warnings of [null,[{page:0,kind:'header'}],[{page:1,kind:'script'}],Array(201).fill({page:1,kind:'header'})])assert.equal(frameMessage({type:'warnings',token:'t',warnings}),undefined);
+  assert.deepEqual(frameMessage({type:'warnings',token:'t',warnings:[{page:2,kind:'footer'}]}),{type:'warnings',token:'t',warnings:[{page:2,kind:'footer'}]});
 });

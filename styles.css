@@ -121,3 +121,11 @@
 .ps-preview-controls input[type=number] { width: 52px; text-align: center; }
 .ps-preview-controls select { margin-inline-start: var(--size-4-2); max-width: 115px; }
 .ps-page-total { white-space: nowrap; }
+.ps-history { display: flex; gap: var(--size-4-2); }
+.ps-history button { flex: 1; }
+.ps-studio .ps-template-control { flex-direction: column; align-items: stretch; }
+.ps-studio .ps-template-control select { width: 100%; max-width: none; }
+.ps-notes { max-height: 25%; overflow-y: auto; }
+.ps-warning-list summary { cursor: pointer; font-weight: var(--font-semibold); }
+.ps-warning { display: flex; align-items: baseline; gap: var(--size-4-2); margin-top: var(--size-4-2); }
+.ps-warning span { overflow-wrap: anywhere; }

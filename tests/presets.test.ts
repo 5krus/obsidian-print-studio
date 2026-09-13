@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {defaults} from '../src/settings';
+import {defaults,normalizePreset} from '../src/settings';
 import {exportPresets, importPresets} from '../src/presets';
 
 test('preset backups retain logos, geometry and text while imports create independent copies', () => {
@@ -41,4 +41,19 @@ test('header and footer property order does not affect a valid import',()=>{
   const {left,center,right}=data.presets[0].header;
   data.presets[0].header={right,left,center};
   assert.equal(importPresets(JSON.stringify(data),settings).presets.length,4);
+});
+
+test('first-page settings round-trip and older backups acquire safe defaults',()=>{
+  const settings=defaults(),preset=settings.presets[0];
+  preset.differentFirstPage=true;preset.firstPageMarginTop=55;preset.firstPageLogoHeight=25;
+  preset.firstPageHeader={left:'Letterhead',center:'{{meta:client}}',right:''};preset.logoFirstPageOnly=true;
+  const copy=importPresets(exportPresets([preset]),settings).presets[3];
+  assert.deepEqual(copy.firstPageHeader,preset.firstPageHeader);assert.equal(copy.firstPageMarginTop,55);assert.equal(copy.firstPageLogoHeight,25);assert.equal(copy.logoFirstPageOnly,true);
+  const old=JSON.parse(exportPresets([preset]));
+  for(const key of ['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly'])delete old.presets[0][key];
+  const legacy=importPresets(JSON.stringify(old),settings).presets[3];
+  assert.equal(legacy.differentFirstPage,false);assert.equal(legacy.logoFirstPageOnly,false);
+  assert.equal(normalizePreset({firstPageMarginTop:999,firstPageLogoHeight:-4}).firstPageMarginTop,70);
+  assert.equal(normalizePreset({firstPageLogoHeight:-4}).firstPageLogoHeight,4);
+  old.presets[0].firstPageMarginTop=999;assert.throws(()=>importPresets(JSON.stringify(old),settings),/invalid firstPageMarginTop/);
 });

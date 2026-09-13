@@ -9,6 +9,77 @@ const {StudioPanel}=await import('../src/panel');
 const source={html:'<h1>Note</h1>',context:{title:'Note',vault:'Work',date:'Today',metadata:{}},warnings:[]};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 after(()=>dom.window.close());
+const button=(name:string)=>document.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+const job=()=>JSON.parse(document.querySelector('iframe')!.srcdoc.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
+const send=(data:Record<string,unknown>)=>window.dispatchEvent(new dom.window.MessageEvent('message',{source:document.querySelector('iframe')!.contentWindow,data:{token:job().token,...data}}));
+
+test('layout edits reuse the note, preserve the page, and clamp after pagination shrinks',async()=>{
+  let reads=0;
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>{reads++;return source;},save:async()=>{},notify:()=>{}});
+  try {
+    await tick();send({type:'ready',pages:8});send({type:'viewport',page:6});
+    await panel.render();send({type:'ready',pages:7});
+    assert.equal(document.querySelector<HTMLInputElement>('[aria-label="Page"]')!.value,'6');
+    assert.equal(reads,1);
+    await panel.render();send({type:'ready',pages:3});
+    assert.equal(document.querySelector<HTMLInputElement>('[aria-label="Page"]')!.value,'3');
+    button('Refresh note').click();await tick();assert.equal(reads,2);
+  }finally{panel.dispose();}
+});
+
+test('a newer refresh wins over pending source reads and failed reads can be retried',async()=>{
+  const pending:Array<{resolve:(value:typeof source)=>void;reject:(error:Error)=>void}>=[];
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:()=>new Promise((resolve,reject)=>pending.push({resolve,reject})),save:async()=>{},notify:()=>{}});
+  try {
+    await tick();const shared=panel.render();await tick();assert.equal(pending.length,1);
+    const fresh=panel.render(true);await tick();assert.equal(pending.length,2);
+    pending[1].resolve({...source,html:'<p>Fresh</p>'});await fresh;
+    pending[0].resolve({...source,html:'<p>Stale</p>'});await shared;assert.equal(job().html,'<p>Fresh</p>');
+    const failed=panel.render(true);await tick();pending[2].reject(new Error('Read failed'));await failed;
+    const retry=panel.render();await tick();assert.equal(pending.length,4);pending[3].resolve(source);await retry;
+    assert.equal(job().html,source.html);
+  }finally{panel.dispose();}
+});
+
+test('undo and redo persist restored presets, including removed presets',async()=>{
+  let saved:Settings|undefined;
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:{...browserUI,confirmRemoval:async()=>true},settings:defaults(),source:async()=>source,save:async s=>{saved=s;},notify:()=>{}});
+  try {
+    await tick();assert.equal(button('Undo change').disabled,true);
+    button('Remove preset').click();await tick();assert.equal(saved?.presets.length,2);
+    button('Undo change').click();await tick();assert.equal(saved?.presets.length,3);assert.equal(saved?.activeId,'classic');
+    assert.equal(document.activeElement,button('Redo change'));
+    button('Redo change').click();await tick();assert.equal(saved?.presets.length,2);
+    assert.equal(document.activeElement,button('Undo change'));
+  }finally{panel.dispose();}
+});
+
+test('placeholder picker inserts at the selection and updates properties on refresh',async()=>{
+  let saved:Settings|undefined;
+  let metadata:Record<string,unknown>={client:'Acme',count:0,approved:false,tags:['a']};
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>({...source,context:{...source.context,metadata}}),save:async s=>{saved=s;},notify:()=>{}});
+  try {
+    await tick();const field=document.querySelector<HTMLTextAreaElement>('[data-section="Header"] textarea')!;
+    const picker=document.querySelector<HTMLSelectElement>('[aria-label="Insert placeholder into Header left"]')!;
+    assert.ok(picker.querySelector('option[value="{{meta:approved}}"]'));
+    assert.equal(picker.querySelector('option[value="{{meta:tags}}"]'),null);
+    field.value='Dear CLIENT!';field.setSelectionRange(5,11);picker.value='{{meta:client}}';picker.dispatchEvent(new dom.window.Event('change'));
+    await tick();assert.equal(field.value,'Dear {{meta:client}}!');assert.equal(saved?.presets[0].header.left,field.value);
+    assert.equal(document.activeElement,field);assert.equal(field.selectionStart,'Dear {{meta:client}}'.length);
+    metadata={project:'New'};await panel.render(true);
+    assert.equal(picker.querySelector('option[value="{{meta:client}}"]'),null);assert.ok(picker.querySelector('option[value="{{meta:project}}"]'));
+  }finally{panel.dispose();}
+});
+
+test('layout warnings are actionable, scoped to the current job, and cleared by edits',async()=>{
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>source,save:async()=>{},notify:()=>{}});
+  try {
+    await tick();send({type:'warnings',warnings:[{page:2,kind:'header'}]});send({type:'ready',pages:3});
+    assert.match(document.querySelector('.ps-notes')!.textContent!,/increase the top margin/);
+    button('Page 2').click();assert.equal(document.querySelector<HTMLInputElement>('[aria-label="Page"]')!.value,'2');
+    await panel.render();assert.equal(document.querySelector('.ps-warning'),null);
+  }finally{panel.dispose();}
+});
 test('preview readiness is scoped to the current frame job; edits cannot print stale pages',async()=>{
   let saved:Settings|undefined;const messages:string[]=[];
   const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>source,save:async value=>{saved=value;},notify:value=>messages.push(value)});

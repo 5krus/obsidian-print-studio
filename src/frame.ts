@@ -3,6 +3,7 @@ import {frameCommand} from './messages';
 import {pageCss, type PrintJob} from './document';
 import {expandTemplate} from './template';
 import {paperSize} from './settings';
+import {layoutWarnings} from './layout-warnings';
 declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
@@ -32,19 +33,24 @@ async function run() {
   pages.stop(); pages.pages.forEach(page=>page.removeListeners());
   const all=[...document.querySelectorAll<HTMLElement>('.pagedjs_page')];
   all.forEach((page,index)=>{
+    const first=index===0 && job.preset.differentFirstPage;
+    if(first)page.classList.add('ps-first-page');
     const box=page.querySelector('.pagedjs_pagebox')!;
     const border=document.createElement('div');border.className='ps-page-border';box.append(border);
     for(const location of ['header','footer'] as const) {
       const band=document.createElement('div');band.className=`ps-page-${location}`;
       for(const alignment of ['left','center','right'] as const) {
         const slot=document.createElement('div');slot.className=`ps-slot ${alignment}`;
-        if(location==='header' && alignment==='left' && job.preset.logo) {const img=document.createElement('img');img.src=job.preset.logo;img.alt=job.preset.company || 'Company logo';img.className='ps-logo';slot.append(img);}
-        const text=document.createElement('span');text.textContent=expandTemplate(job.preset[location][alignment],job.context,job.preset.company,index+1,all.length);slot.append(text);band.append(slot);
+        if(location==='header' && alignment==='left' && job.preset.logo && (index===0 || !job.preset.logoFirstPageOnly)) {const img=document.createElement('img');img.src=job.preset.logo;img.alt=job.preset.company || 'Company logo';img.className='ps-logo';slot.append(img);}
+        const slots=location==='header' && first?job.preset.firstPageHeader:job.preset[location];
+        const text=document.createElement('span');text.textContent=expandTemplate(slots[alignment],job.context,job.preset.company,index+1,all.length);slot.append(text);band.append(slot);
       }
       box.append(band);
     }
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
+  await document.fonts.ready;
+  send('warnings',{warnings:layoutWarnings(all)});
   document.querySelector('#ps-loading')?.remove();
   const stack=document.querySelector<HTMLElement>('.pagedjs_pages')!;
   let zoom:string='fit';
