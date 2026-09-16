@@ -28,6 +28,8 @@ Prepared for {{meta:client}}
 
 Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `====` on its own line, with blank lines around it, outside a code fence. The marker is hidden in the note editor until the cursor or selection reaches its line. Existing `<!-- pagebreak -->` markers also work. Frontmatter is omitted from the printed body.
 
+For a bottom-aligned cover, put `&&&&` on its own line before the title and other cover text, then `====` after it. The space above that text expands to fill the printed page. Without a following break, alignment continues to the end of the note. The spacer is hidden in the editor until its line is active and adds no space to the ordinary note. Content too long for one page flows normally, with its last page aligned to the bottom.
+
 ## Print and export
 
 Choose **Print / Save PDF** once the preview is ready. In the print dialog, match the preview’s paper size and orientation, use **100% scale** and **no added margins**, disable browser headers/footers, and enable background graphics.

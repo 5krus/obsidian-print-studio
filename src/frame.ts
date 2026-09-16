@@ -20,6 +20,21 @@ async function run() {
   }
   await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
   source.querySelectorAll('input[type=checkbox]').forEach(input=>{const span=document.createElement('span');span.className='ps-check';span.textContent=(input as HTMLInputElement).checked?'☑\uFE0E':'☐';input.replaceWith(span);});
+  // Group the content after a spacer up to the next explicit break. Repeated
+  // spacers in the same section share its remaining space.
+  for(const marker of source.querySelectorAll('.ps-bottom-marker')) {
+    if(!source.contains(marker))continue;
+    const group=document.createElement('div');group.className='ps-bottom-block';
+    marker.before(group);
+    let next=marker.nextSibling;
+    marker.remove();
+    while(next) {
+      if(next.nodeType===1 && (next as Element).classList.contains('ps-page-break'))break;
+      const current=next;next=next.nextSibling;
+      if(current.nodeType===1 && (current as Element).classList.contains('ps-bottom-marker'))current.parentNode?.removeChild(current);
+      else group.append(current);
+    }
+  }
   const previewer=new Previewer();
   // Paged.js 0.4.3 normally waits for animation frames between pages. Electron
   // can stop those while the window is unfocused, leaving pagination stuck.
@@ -52,6 +67,16 @@ async function run() {
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   await document.fonts.ready;
+  // Move only into unused space after pagination, without changing page count
+  // or splitting a fitting cover. Oversized sections retain normal pagination.
+  for(const page of all) {
+    const area=page.querySelector<HTMLElement>('.pagedjs_area')!;
+    for(const group of page.querySelectorAll<HTMLElement>('.ps-bottom-block')) {
+      if(group.hasAttribute('data-split-to'))continue;
+      const space=Math.max(0,area.getBoundingClientRect().bottom-group.getBoundingClientRect().bottom);
+      group.style.top=`${space}px`;
+    }
+  }
   send('warnings',{warnings:layoutWarnings(all)});
   document.querySelector('#ps-loading')?.remove();
   const stack=document.querySelector<HTMLElement>('.pagedjs_pages')!;

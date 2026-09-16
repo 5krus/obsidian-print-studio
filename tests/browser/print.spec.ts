@@ -157,3 +157,42 @@ test('preset removal dialog supports cancel, Escape, confirmation and undo',asyn
   await page.getByRole('button',{name:'Undo change',exact:true}).click();
   await expect(presets.locator('option')).toHaveCount(count);
 });
+
+
+for(const options of ['', '&paper=Letter&orientation=landscape', '&firstPage&top', '&noBreak', '&longCover']) {
+  test(`bottom-aligned cover preserves content and following page ${options}`,async({page,browser},testInfo)=>{
+    await page.goto(`/test.html?cover${options}`);
+    await expect(page.getByRole('status')).toContainText('Ready to print');
+    await page.getByRole('combobox',{name:'Preview zoom'}).selectOption('1');
+    const preview=page.frameLocator('.ps-frame');
+    const author=preview.getByText('COVER-AUTHOR',{exact:true});
+    await expect(author).toHaveCount(1);
+    const gap=await author.evaluate(el=>el.closest('.pagedjs_area')!.getBoundingClientRect().bottom-el.getBoundingClientRect().bottom);
+    expect(Math.abs(gap)).toBeLessThan(2);
+    if(options.includes('top')) {
+      const top=preview.getByText('TOP-ANCHOR',{exact:true});
+      expect(await top.evaluate(el=>el.getBoundingClientRect().top-el.closest('.pagedjs_area')!.getBoundingClientRect().top)).toBeLessThan(2);
+    }
+    if(!options.includes('noBreak')) {
+      const body=preview.getByRole('heading',{name:'BODY-START'});
+      expect(await body.evaluate(el=>el.getBoundingClientRect().top-el.closest('.pagedjs_area')!.getBoundingClientRect().top)).toBeLessThan(2);
+      expect(await body.evaluate(el=>el.closest('.pagedjs_page')!.getAttribute('data-page-number'))).not.toBe(await author.evaluate(el=>el.closest('.pagedjs_page')!.getAttribute('data-page-number')));
+    }
+    if(!options.includes('longCover'))await expect(preview.locator('.pagedjs_page')).toHaveCount(options.includes('noBreak')?1:2);
+    await expect(preview.locator('.ps-bottom-marker')).toHaveCount(0);
+    const downloadPromise=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Export HTML',exact:true}).click();
+    const html=await readFile((await (await downloadPromise).path())!,'utf8');
+    const output=await browser.newPage();await output.setContent(html);await output.evaluate(()=>document.fonts.ready);
+    const exported=output.getByText('COVER-AUTHOR',{exact:true});
+    expect(Math.abs(await exported.evaluate(el=>el.closest('.pagedjs_area')!.getBoundingClientRect().bottom-el.getBoundingClientRect().bottom))).toBeLessThan(2);
+    const pdf=testInfo.outputPath('cover.pdf');
+    await output.pdf({path:pdf,preferCSSPageSize:true,printBackground:true});
+    const text=execFileSync('pdftotext',['-layout',pdf,'-'],{encoding:'utf8'});
+    expect(text.match(/COVER-AUTHOR/g)).toHaveLength(1);
+    expect(text.match(/COVER-TITLE/g)).toHaveLength(1);
+    if(options.includes('longCover'))for(let i=0;i<45;i++)expect(text.match(new RegExp(`COVER-ROW-${i}\\b`,'g'))).toHaveLength(1);
+    expect(text).not.toContain('&&&&');
+    await output.close();
+  });
+}

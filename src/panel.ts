@@ -335,7 +335,7 @@ export class StudioPanel {
     this.number(page, 'Bottom margin (mm)', 'marginBottom', 18, 50);
     this.number(page, 'Side margins (mm)', 'marginSide', 15, 40);
     this.toggle(page, 'Page break before headings', 'headingBreaks', 'Start each top-level heading after the first on a new page.');
-    page.append(this.el('p', 'ps-tip', 'For a manual page break, add ==== on its own line in your note.'));
+    page.append(this.el('p', 'ps-tip', 'For a manual page break, add ==== on its own line. Add &&&& on its own line to push the following content to the bottom of the printed page, up to the next break.'));
 
     const type = this.section('Typography');
     this.select(type, 'Font', this.preset.font, {sans:'Sans serif',serif:'Serif'}, v=>this.preset.font=v as Preset['font']);

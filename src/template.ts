@@ -18,11 +18,11 @@ export function expandTemplate(template: string, context: DocumentContext, compa
 /** Frontmatter must be at the beginning; do not mistake a body divider for metadata. */
 export function stripFrontmatter(markdown: string): string {return markdown.replace(/^\uFEFF?---[ \t]*\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/,'');}
 /** Shared by print preparation and the editor so examples stay untouched. */
-export function pageBreakLines(markdown:string):number[] {
+export function printMarkerLines(markdown:string):Array<{line:number;kind:'break'|'bottom'}> {
   const lines=markdown.split('\n');
   const body=stripFrontmatter(markdown);
   const start=markdown===body?0:markdown.slice(0,markdown.length-body.length).split('\n').length-1;
-  const breaks:number[]=[];
+  const markers:Array<{line:number;kind:'break'|'bottom'}>=[];
   let fence: {char:string; length:number} | null = null;
   for(let index=start;index<lines.length;index++) {
     const line=lines[index];
@@ -32,12 +32,13 @@ export function pageBreakLines(markdown:string):number[] {
       else if(match[1][0]===fence.char && match[1].length>=fence.length && line.slice(match[0].length).trim()==='')fence=null;
       continue;
     }
-    if(!fence && /^ {0,3}(?:====|<!--\s*pagebreak\s*-->)[ \t]*\r?$/.test(line))breaks.push(index+1);
+    if(!fence && /^ {0,3}(?:====|&&&&|<!--\s*pagebreak\s*-->)[ \t]*\r?$/.test(line))markers.push({line:index+1,kind:line.trim()==='&&&&'?'bottom':'break'});
   }
-  return breaks;
+  return markers;
 }
+export function pageBreakLines(markdown:string):number[] {return printMarkerLines(markdown).filter(marker=>marker.kind==='break').map(marker=>marker.line);}
 export function prepareMarkdown(markdown: string): string {
   const body=stripFrontmatter(markdown);
-  const breaks=new Set(pageBreakLines(body));
-  return body.split('\n').map((line,index)=>breaks.has(index+1)?'\n<div class="ps-page-break"></div>\n':line).join('\n');
+  const markers=new Map(printMarkerLines(body).map(marker=>[marker.line,marker.kind]));
+  return body.split('\n').map((line,index)=>markers.has(index+1)?`\n<div class="${markers.get(index+1)==='break'?'ps-page-break':'ps-bottom-marker'}"></div>\n`:line).join('\n');
 }

@@ -1,9 +1,9 @@
 import {StateField, type EditorState} from '@codemirror/state';
 import {Decoration, EditorView, type DecorationSet} from '@codemirror/view';
-import {pageBreakLines} from './template';
+import {printMarkerLines} from './template';
 
 function decorations(state:EditorState):DecorationSet {
-  const hidden=pageBreakLines(state.doc.toString()).flatMap(number=>{
+  const hidden=printMarkerLines(state.doc.toString()).flatMap(({line:number})=>{
     const line=state.doc.line(number);
     const active=state.selection.ranges.some(range=>range.from<=line.to && range.to>=line.from);
     return active?[]:[Decoration.replace({}).range(line.from,line.to)];

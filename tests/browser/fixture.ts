@@ -23,7 +23,7 @@ if(query.has('firstPage')) {
 if(query.has('overflow')) {
   preset.header.left='Long header text '.repeat(17);preset.footer.right='Long footer text '.repeat(17);
 }
-const markdown=query.has('overflow')?'<h1>Oversized row</h1><table><tr><td>'+Array.from({length:100},(_,i)=>`Line ${i}<br>`).join('')+'</td></tr></table>':validationMarkdown(preset.logo);
+const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n\n# COVER-TITLE\n\n${query.has('longCover')?Array.from({length:45},(_,i)=>`COVER-ROW-${i} ${'Cover content. '.repeat(15)}\n\n`).join(''):''}Cover subtitle\n\n&&&&\n\nCOVER-AUTHOR${query.has('noBreak')?'':'\n\n====\n\n# BODY-START\n\nBody content.'}`:query.has('overflow')?'<h1>Oversized row</h1><table><tr><td>'+Array.from({length:100},(_,i)=>`Line ${i}<br>`).join('')+'</td></tr></table>':validationMarkdown(preset.logo);
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
