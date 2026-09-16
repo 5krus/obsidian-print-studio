@@ -13,7 +13,7 @@ test('frontmatter is removed only at the start, including CRLF and YAML terminat
   assert.equal(stripFrontmatter('Introduction\n\n---\n\nSection'),'Introduction\n\n---\n\nSection');
 });
 test('explicit page breaks preserve fenced examples and ordinary comments',()=>{
-  assert.equal(prepareMarkdown('<!-- pagebreak -->\n```html\n<!-- pagebreak -->\n```\n~~~\n<!-- pagebreak -->\n~~~\n<!-- hello -->'),'<div class="ps-page-break"></div>\n```html\n<!-- pagebreak -->\n```\n~~~\n<!-- pagebreak -->\n~~~\n<!-- hello -->');
+  assert.equal(prepareMarkdown('<!-- pagebreak -->\n```html\n<!-- pagebreak -->\n```\n~~~\n<!-- pagebreak -->\n~~~\n<!-- hello -->'),'\n<div class="ps-page-break"></div>\n\n```html\n<!-- pagebreak -->\n```\n~~~\n<!-- pagebreak -->\n~~~\n<!-- hello -->');
 });
 test('settings reject CSS injection, malformed logos and impossible geometry',()=>{
   const p=normalizePreset({marginTop:-50,marginBottom:Infinity,marginSide:100,fontSize:100,color:'red;}body{display:none}',border:'url(evil)',logo:'data:image/svg+xml;base64,PHN2Zz4=',header:{left:'safe'}});

@@ -24,7 +24,7 @@ console.log(answer);
 | --- | --- | --- |
 ${Array.from({length:65},(_,i)=>`| ROW-${String(i+1).padStart(3,'0')} | A table entry that must not disappear between pages. | £${i+1} |`).join('\n')}
 
-<!-- pagebreak -->
+====
 
 # MANUAL-BREAK-START
 This section must begin on a separate physical page.

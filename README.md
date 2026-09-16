@@ -26,7 +26,7 @@ Prepared for {{meta:client}}
 {{page}} / {{pages}}
 ```
 
-Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `<!-- pagebreak -->` on its own line outside a code fence. Frontmatter is omitted from the printed body.
+Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `====` on its own line, with blank lines around it, outside a code fence. The marker is hidden in the note editor until the cursor or selection reaches its line. Existing `<!-- pagebreak -->` markers also work. Frontmatter is omitted from the printed body.
 
 ## Print and export
 

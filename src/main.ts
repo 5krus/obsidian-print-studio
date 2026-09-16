@@ -1,4 +1,5 @@
 import {Component, getLinkpath, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
+import {pageBreakEditor} from './page-break-editor';
 import {StudioPanel} from './panel';
 import {obsidianUI} from './obsidian-ui';
 import {normalizeSettings, type Settings} from './settings';
@@ -14,6 +15,7 @@ export default class PrintStudioPlugin extends Plugin {
     this.addRibbonIcon('printer','Print Studio',()=>{const file=this.app.workspace.getActiveFile();if(file?.extension==='md')this.openStudio(file);else new Notice('Open a Markdown note to use Print Studio.');});
     this.registerEvent(this.app.workspace.on('file-menu',(menu,file)=>{if(file instanceof TFile && file.extension==='md')menu.addItem(item=>item.setTitle('Open in Print Studio').setIcon('printer').onClick(()=>this.openStudio(file)));}));
     this.addSettingTab(new PrintSettings(this));
+    this.registerEditorExtension(pageBreakEditor);
   }
   openStudio(file:TFile){const modal=new PrintModal(this,file,()=>this.studios.delete(modal));this.studios.add(modal);modal.open();}
   async saveSettings(settings:Settings){await this.saveData(settings);this.studioSettings=structuredClone(settings);}

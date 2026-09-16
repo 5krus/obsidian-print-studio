@@ -17,12 +17,27 @@ export function expandTemplate(template: string, context: DocumentContext, compa
 }
 /** Frontmatter must be at the beginning; do not mistake a body divider for metadata. */
 export function stripFrontmatter(markdown: string): string {return markdown.replace(/^\uFEFF?---[ \t]*\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/,'');}
-/** Preserve fenced examples that happen to contain our explicit break marker. */
-export function prepareMarkdown(markdown: string): string {
+/** Shared by print preparation and the editor so examples stay untouched. */
+export function pageBreakLines(markdown:string):number[] {
+  const lines=markdown.split('\n');
+  const body=stripFrontmatter(markdown);
+  const start=markdown===body?0:markdown.slice(0,markdown.length-body.length).split('\n').length-1;
+  const breaks:number[]=[];
   let fence: {char:string; length:number} | null = null;
-  return stripFrontmatter(markdown).split('\n').map(line=>{
+  for(let index=start;index<lines.length;index++) {
+    const line=lines[index];
     const match=line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (match) {if(!fence) fence={char:match[1][0],length:match[1].length};else if(match[1][0]===fence.char && match[1].length>=fence.length && line.slice(match[0].length).trim()==='') fence=null;return line;}
-    return !fence && /^\s*<!--\s*pagebreak\s*-->\s*$/.test(line) ? '<div class="ps-page-break"></div>' : line;
-  }).join('\n');
+    if(match) {
+      if(!fence)fence={char:match[1][0],length:match[1].length};
+      else if(match[1][0]===fence.char && match[1].length>=fence.length && line.slice(match[0].length).trim()==='')fence=null;
+      continue;
+    }
+    if(!fence && /^ {0,3}(?:====|<!--\s*pagebreak\s*-->)[ \t]*\r?$/.test(line))breaks.push(index+1);
+  }
+  return breaks;
+}
+export function prepareMarkdown(markdown: string): string {
+  const body=stripFrontmatter(markdown);
+  const breaks=new Set(pageBreakLines(body));
+  return body.split('\n').map((line,index)=>breaks.has(index+1)?'\n<div class="ps-page-break"></div>\n':line).join('\n');
 }
