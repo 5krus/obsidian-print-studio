@@ -1,5 +1,13 @@
 # Print Studio validation
 
+## 0.3.6 uppercase fields
+
+- Lint, all 39 unit tests, TypeScript/build, and all 20 Chromium browser/PDF tests pass.
+- The uppercase test exercises all nine header, footer, and first-page field switches; resolved titles, dates, vault/company names, properties, page totals, and accented text; saved settings; independent toggling; and undo.
+- Exported HTML and PDF retain uppercase header/footer text while the document body and source templates retain their original casing.
+- Unit checks cover defaults for older settings and backups, malformed uppercase flags, preset round-trips, independent copies, and undo/redo snapshots.
+- Physical printing and Windows/macOS print dialogs remain unverified. Native Obsidian validation below applies to 0.2.0.
+
 ## 0.3.3 repository cleanup
 
 - The plugin build and browser test build no longer depend on the standalone demo. Test-only DOM controls and theme styles live under `tests/support`.
