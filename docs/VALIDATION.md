@@ -91,3 +91,7 @@ There is no configured printer on this machine, so no physical print job was sub
 - Exercise the system print dialog on Windows and macOS before claiming those environments as tested.
 
 Long unbreakable rows and complex plugin-rendered content remain subject to the rendering limitations in the README.
+
+## 0.3.8 embedded-note serialization
+
+Lint, unit tests, TypeScript/build, and all 21 browser/PDF tests passed. Regression tests construct native-style span embeds through DOM operations and verify that serialization preserves metadata scope, nested content, surrounding text and formatting, image embeds, and the original DOM. Browser tests use the same native-style fixture to verify the metadata toggle through pagination and export.

@@ -6,6 +6,7 @@ import {normalizeSettings, type Settings} from './settings';
 import {prepareMarkdown} from './template';
 import DOMPurify from 'dompurify';
 import {resolveVaultImage} from './attachments';
+import {serializeRenderedNote} from './rendered-note';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
   private studios=new Set<PrintModal>();
@@ -72,7 +73,7 @@ class PrintModal extends Modal {
     if(root.querySelector('.internal-embed:not(.image-embed),.block-language-dataview,.block-language-dataviewjs'))warnings.push('Embedded notes and dynamic plugin blocks may need checking in the preview.');
     const metadata=this.app.metadataCache.getFileCache(this.file)?.frontmatter ?? {};
     const title=typeof metadata.title==='string'?metadata.title:this.file.basename;
-    return {html:root.innerHTML,context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
+    return {html:serializeRenderedNote(root,(tag)=>createEl(tag)),context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
   }
   onClose(){this.isClosed=true;this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
 }

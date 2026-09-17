@@ -53,3 +53,14 @@ export const embeddedNoteHtml = `<h1>Main document heading</h1>
 </div>
 <div class="internal-embed media-embed image-embed"><span class="inline-title">Image caption survives</span></div>
 <p>End of main document</p>`;
+// Build this with DOM operations: parsing the same string already detaches the
+// block children, which is precisely the native Obsidian regression we test.
+export function inlineEmbeddedNote(root:HTMLElement):HTMLElement {
+  const embed=root.querySelector('.markdown-embed')!;
+  const span=root.ownerDocument.createElement('span');
+  for(const attribute of embed.attributes)span.setAttribute(attribute.name,attribute.value);
+  span.append(...embed.childNodes);
+  const paragraph=root.ownerDocument.createElement('p');
+  paragraph.append(span);embed.replaceWith(paragraph);
+  return root;
+}

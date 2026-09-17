@@ -1,10 +1,13 @@
-import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml} from '../fixtures';
+import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml,inlineEmbeddedNote} from '../fixtures';
+import {serializeRenderedNote} from '../../src/rendered-note';
 import {marked} from 'marked';
 import {StudioPanel} from '../../src/panel';
 import {defaults} from '../../src/settings';
 import {prepareMarkdown} from '../../src/template';
 import {browserUI} from '../support/ui';
 const query=new URLSearchParams(location.search);
+const embedRoot=document.createElement('div');embedRoot.innerHTML=embeddedNoteHtml;
+const embedHtml=serializeRenderedNote(inlineEmbeddedNote(embedRoot),browserUI.createElement);
 const settings=defaults();
 const preset=settings.presets[0];
 preset.paper=query.get('paper')==='Letter'?'Letter':'A4';
@@ -32,7 +35,7 @@ const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
-  source:async()=>{window.testReads++;return {html:query.has('embeds')?embeddedNoteHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;return {html:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
