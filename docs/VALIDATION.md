@@ -1,5 +1,14 @@
 # Print Studio validation
 
+## 0.3.7 embedded-note metadata
+
+- Lint, 42 unit tests, TypeScript/build, and 21 browser/PDF tests cover the release.
+- A new browser test verifies that hiding generated embed titles and frontmatter reclaims vertical space, preserves body headings/inline tags/code and nested embeds, saves the option, supports undo/redo, and carries through to exported HTML and PDF.
+- Unit checks cover scoped removal, preservation of note-body wrappers that carry Obsidian's `mod-frontmatter` class, unchanged media captions, frame payloads, and compatibility with older preset backups.
+- The filter was checked inside native Obsidian on a detached copy of a live embedded note. Three generated title/frontmatter elements were removed; body content and the live original DOM were unchanged.
+- The initial local browser run had two timeouts during preview/UI operations; the affected tests were rerun separately. Release CI must pass the complete suite before publication.
+- This native check validates the metadata filter, not the full system print dialog. Physical printing and Windows/macOS print dialogs remain unverified.
+
 ## 0.3.6 uppercase fields
 
 - Lint, all 39 unit tests, TypeScript/build, and all 20 Chromium browser/PDF tests pass.

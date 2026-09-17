@@ -8,6 +8,7 @@ export interface Preset {
   font: 'sans' | 'serif'; fontSize: number; lineHeight: number; logoHeight: number;
   header: Slots; footer: Slots; headerRule: boolean; footerRule: boolean; headingBreaks: boolean;
   headerUppercase: SlotFlags; footerUppercase: SlotFlags; firstPageHeaderUppercase: SlotFlags;
+  hideEmbeddedNoteMetadata: boolean;
   differentFirstPage: boolean; firstPageMarginTop: number; firstPageLogoHeight: number;
   firstPageHeader: Slots; firstPageHeaderRule: boolean; logoFirstPageOnly: boolean;
 }
@@ -19,6 +20,7 @@ export const DEFAULT_PRESET: Preset = {
   lineHeight: 1.55, logoHeight: 9, header: {left: '{{company}}', center: '', right: '{{title}}'},
   footer: {left: '{{company}}', center: '{{date}}', right: '{{page}} / {{pages}}'},
   headerRule: true, footerRule: true, headingBreaks: false,
+  hideEmbeddedNoteMetadata: false,
   headerUppercase: {left: false, center: false, right: false},
   footerUppercase: {left: false, center: false, right: false},
   firstPageHeaderUppercase: {left: false, center: false, right: false},
@@ -48,6 +50,7 @@ export function normalizePreset(input: unknown): Preset {
     font: v.font === 'serif' ? 'serif' : 'sans', fontSize:num(v.fontSize,d.fontSize,8,18), lineHeight:num(v.lineHeight,d.lineHeight,1.2,2), logoHeight:num(v.logoHeight,d.logoHeight,4,12),
     header:slots(v.header,d.header), footer:slots(v.footer,d.footer), headerRule:bool(v.headerRule,d.headerRule), footerRule:bool(v.footerRule,d.footerRule), headingBreaks:bool(v.headingBreaks,d.headingBreaks),
     headerUppercase:flags(v.headerUppercase), footerUppercase:flags(v.footerUppercase), firstPageHeaderUppercase:flags(v.firstPageHeaderUppercase),
+    hideEmbeddedNoteMetadata:bool(v.hideEmbeddedNoteMetadata,d.hideEmbeddedNoteMetadata),
     differentFirstPage:bool(v.differentFirstPage,d.differentFirstPage), firstPageMarginTop:num(v.firstPageMarginTop,d.firstPageMarginTop,22,70), firstPageLogoHeight:num(v.firstPageLogoHeight,d.firstPageLogoHeight,4,30),
     firstPageHeader:slots(v.firstPageHeader,d.firstPageHeader), firstPageHeaderRule:bool(v.firstPageHeaderRule,d.firstPageHeaderRule), logoFirstPageOnly:bool(v.logoFirstPageOnly,d.logoFirstPageOnly)};
 }

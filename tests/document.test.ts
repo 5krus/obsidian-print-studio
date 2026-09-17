@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {browserUI} from './support/ui';
 import {defaults} from '../src/settings';
+import {embeddedNoteHtml} from './fixtures';
 const dom=new JSDOM('<!doctype html><body></body>');
 Object.assign(globalThis,{window:dom.window,document:dom.window.document,FRAME_RUNTIME:'/* bundled runtime */'});
 const documentModule=await import('../src/document');
@@ -31,4 +32,24 @@ test('code block controls and their icons are removed without losing code or che
   assert.doesNotMatch(html,/<button|<svg|Copy|<input/);
   assert.match(html,/☑/);assert.match(html,/☐/);
   assert.equal((html.match(/task-list-item/g)??[]).length,2);
+});
+
+test('embedded note metadata is optional without stripping body headings, tags, code or media captions',()=>{
+  const original=cleanMarkup(embeddedNoteHtml);
+  assert.match(original,/Generated embed title/);assert.match(original,/generated-tag/);
+  const cleaned=documentModule.cleanMarkup(embeddedNoteHtml,browserUI.createElement,true);
+  assert.doesNotMatch(cleaned,/Generated|generated-tag|Nested generated title|nested-generated-tag|Open embedded note|Properties panel/);
+  for(const text of ['Main document heading','#main-tag','Embedded body heading','#body-tag','Keep this code example','code-tag','Nested body survives','Image caption survives','End of main document'])assert.ok(cleaned.includes(text),text);
+  assert.match(cleaned,/markdown-preview-view markdown-rendered mod-frontmatter mod-ui/);
+  const outside='<div class="inline-title">Outside title</div><pre class="frontmatter">Outside properties</pre>';
+  assert.equal(documentModule.cleanMarkup(outside,browserUI.createElement,true),outside);
+});
+
+test('the preset removes embedded metadata from the frame payload before pagination',()=>{
+  const preset=defaults().presets[0];preset.hideEmbeddedNoteMetadata=true;
+  const html=frameDocument({html:embeddedNoteHtml,preset,context:{title:'Main title',vault:'Work',date:'Today',metadata:{}}},'token');
+  const job=JSON.parse(html.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
+  assert.equal(job.preset.hideEmbeddedNoteMetadata,true);
+  assert.doesNotMatch(job.html,/Generated embed title|generated-tag/);
+  assert.match(job.html,/Embedded body heading/);
 });

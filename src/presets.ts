@@ -29,7 +29,7 @@ export function importPresets(text: string, settings: Settings): Settings {
     for (const key of Object.keys(DEFAULT_PRESET) as (keyof Preset)[]) {
       if (key === 'id') continue;
       // Additive settings may be absent from older version 1 exports.
-      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly','headerUppercase','footerUppercase','firstPageHeaderUppercase'].includes(key) && !Object.hasOwn(input,key))continue;
+      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly','headerUppercase','footerUppercase','firstPageHeaderUppercase','hideEmbeddedNoteMetadata'].includes(key) && !Object.hasOwn(input,key))continue;
       const invalid=()=>new Error(`Preset ${index + 1} has an invalid ${key} value.`);
       if(key==='header' || key==='footer' || key==='firstPageHeader' || key==='headerUppercase' || key==='footerUppercase' || key==='firstPageHeaderUppercase') {
         const slots=input[key];

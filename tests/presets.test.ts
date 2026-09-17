@@ -74,3 +74,14 @@ test('first-page settings round-trip and older backups acquire safe defaults',()
   assert.equal(normalizePreset({firstPageLogoHeight:-4}).firstPageLogoHeight,4);
   old.presets[0].firstPageMarginTop=999;assert.throws(()=>importPresets(JSON.stringify(old),settings),/invalid firstPageMarginTop/);
 });
+test('embedded metadata visibility saves with presets and older backups preserve existing output',()=>{
+  const settings=defaults(),preset=settings.presets[0];
+  assert.equal(preset.hideEmbeddedNoteMetadata,false);
+  preset.hideEmbeddedNoteMetadata=true;
+  assert.equal(importPresets(exportPresets([preset]),settings).presets[3].hideEmbeddedNoteMetadata,true);
+  const old=JSON.parse(exportPresets([preset]));delete old.presets[0].hideEmbeddedNoteMetadata;
+  assert.equal(importPresets(JSON.stringify(old),settings).presets[3].hideEmbeddedNoteMetadata,false);
+  old.presets[0].hideEmbeddedNoteMetadata='true';
+  assert.throws(()=>importPresets(JSON.stringify(old),settings),/invalid hideEmbeddedNoteMetadata/);
+  assert.equal(normalizePreset({hideEmbeddedNoteMetadata:'true'}).hideEmbeddedNoteMetadata,false);
+});

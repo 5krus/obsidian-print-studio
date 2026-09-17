@@ -2,6 +2,45 @@ import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 
+test('embedded titles and properties can be hidden without leaving space or changing body content',async({page,browser},testInfo)=>{
+  await page.goto('/test.html?embeds');
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await page.getByRole('combobox',{name:'Preview zoom'}).selectOption('1');
+  const preview=page.frameLocator('.ps-frame');
+  await expect(preview.getByText('Generated embed title',{exact:true})).toBeVisible();
+  await expect(preview.locator('.frontmatter')).toContainText('generated-tag');
+  const body=preview.getByRole('heading',{name:'Embedded body heading',exact:true});
+  const position=()=>body.evaluate(el=>el.getBoundingClientRect().top-el.closest('.pagedjs_area')!.getBoundingClientRect().top);
+  const before=await position();
+  await page.locator('[data-section="Content"] summary').click();
+  const toggle=page.getByRole('switch',{name:'Hide embedded note titles and properties',exact:true});
+  await expect(toggle).not.toBeChecked();await toggle.click();
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await expect(preview.locator('.markdown-embed-title,.markdown-embed-link,.frontmatter,.frontmatter-container')).toHaveCount(0);
+  expect(await position()).toBeLessThan(before-30);
+  for(const value of ['Main document heading','Embedded body heading','#main-tag','#body-tag','Nested body survives','Image caption survives','End of main document'])await expect(preview.getByText(value,{exact:true})).toBeVisible();
+  await expect(preview.locator('code')).toContainText('tags: [code-tag]');
+  expect(await page.evaluate(()=>window.testReads)).toBe(1);
+  expect(await page.evaluate(()=>(window.testSaved as {presets:Array<{hideEmbeddedNoteMetadata:boolean}>}).presets[0].hideEmbeddedNoteMetadata)).toBe(true);
+  await page.getByRole('button',{name:'Undo change',exact:true}).click();
+  await expect(toggle).not.toBeChecked();
+  await expect(preview.getByText('Generated embed title',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Redo change',exact:true}).click();
+  await expect(toggle).toBeChecked();
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export HTML',exact:true}).click();
+  const html=await readFile((await (await downloadPromise).path())!,'utf8');
+  expect(html).not.toContain('Generated embed title');expect(html).not.toContain('generated-tag');
+  const output=await browser.newPage();await output.setContent(html);await output.evaluate(()=>document.fonts.ready);
+  const pdf=testInfo.outputPath('embedded-notes.pdf');
+  await output.pdf({path:pdf,preferCSSPageSize:true,printBackground:true});
+  const text=execFileSync('pdftotext',['-layout',pdf,'-'],{encoding:'utf8'});
+  expect(text).not.toContain('Generated embed title');expect(text).not.toContain('generated-tag');
+  for(const value of ['Embedded body heading','#body-tag','code-tag','Nested body survives','End of main document'])expect(text).toContain(value);
+  await output.close();
+});
+
 test('per-field uppercase resolves placeholders in preview and exports while preserving the note',async({page,browser},testInfo)=>{
   await page.goto('/test.html?uppercase&firstPage');
   await expect(page.getByRole('status')).toContainText('Ready to print');

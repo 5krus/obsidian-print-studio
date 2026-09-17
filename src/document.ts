@@ -3,7 +3,7 @@ import type {ElementFactory} from './ui';
 import {normalizePreset, paperSize, type Preset} from './settings';
 import {escapeHtml, type DocumentContext} from './template';
 export interface PrintJob {html:string; preset:Preset; context:DocumentContext}
-export function cleanMarkup(html: string, createElement: ElementFactory): string {
+export function cleanMarkup(html: string, createElement: ElementFactory, hideEmbeddedNoteMetadata = false): string {
   const clean = DOMPurify.sanitize(html, {RETURN_DOM_FRAGMENT:true, USE_PROFILES:{html:true,svg:true,svgFilters:true}, ADD_ATTR:['xmlns'], ADD_FORBID_CONTENTS:['button'], FORBID_TAGS:['style','button','iframe','object','embed','video','audio','form'], FORBID_ATTR:['style','srcset']});
   const root = createElement('div');
   root.append(clean);
@@ -12,6 +12,14 @@ export function cleanMarkup(html: string, createElement: ElementFactory): string
   root.querySelectorAll('a').forEach(a=>{const href=a.getAttribute('href') ?? '';if(!/^(https?:|mailto:|#)/i.test(href)) a.removeAttribute('href');});
   root.querySelectorAll('svg').forEach(svg=>{svg.querySelectorAll('[href],[xlink\\:href]').forEach(el=>{for(const attr of ['href','xlink:href']) if(el.hasAttribute(attr) && !el.getAttribute(attr)!.startsWith('#')) el.removeAttribute(attr);});});
   root.querySelectorAll('.copy-code-button,.collapse-indicator,.edit-block-button,.metadata-container').forEach(e=>e.remove());
+  if(hideEmbeddedNoteMetadata) {
+    // Obsidian hides this generated furniture with workspace CSS, which is not
+    // carried into the print frame. Remove it before pagination to reclaim space.
+    // Do not remove .mod-frontmatter: it can also wrap the note's body content.
+    for(const embed of root.querySelectorAll('.markdown-embed,.internal-embed:not(.image-embed):not(.media-embed)')) {
+      embed.querySelectorAll('.markdown-embed-title,.markdown-embed-link,.inline-title,.frontmatter,.frontmatter-container,.frontmatter-section').forEach(e=>e.remove());
+    }
+  }
   return root.innerHTML;
 }
 export function pageCss(preset: Preset): string {
@@ -29,7 +37,8 @@ export function pageCss(preset: Preset): string {
   `;
 }
 export function frameDocument(job: PrintJob, token: string, createElement: ElementFactory, colorScheme: 'light' | 'dark' = 'light'): string {
-  const payload=JSON.stringify({...job,preset:normalizePreset(job.preset),html:cleanMarkup(job.html, createElement),token}).replace(/</g,'\\u003c');
+  const preset=normalizePreset(job.preset);
+  const payload=JSON.stringify({...job,preset,html:cleanMarkup(job.html, createElement, preset.hideEmbeddedNoteMetadata),token}).replace(/</g,'\\u003c');
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' blob:; img-src data:; font-src data:; connect-src 'none';"><title>${escapeHtml(job.context.title)} — Print Studio</title><style data-pagedjs-ignore>
   :root{color-scheme:${colorScheme==='dark'?'dark':'light'}}html,body{background:transparent;margin:0}.pagedjs_pages{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px}.pagedjs_page{color-scheme:light;background:white;box-shadow:0 2px 12px #00000026;flex-shrink:0}.pagedjs_pagebox{position:relative}#ps-loading{display:none}
   @media print{html,body{color-scheme:light;background:white!important}.pagedjs_pages{display:block!important;padding:0!important;zoom:1!important}.pagedjs_page{margin:0!important;box-shadow:none!important;break-after:page}.pagedjs_page:last-child{break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}#ps-loading{display:none}}

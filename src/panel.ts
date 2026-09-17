@@ -266,7 +266,7 @@ export class StudioPanel {
     this.describe(input, row);
     input.onchange = () => {this.preset[key]=Number(input.value); Object.assign(this.preset,normalizePreset(this.preset)); input.value=String(this.preset[key]); this.change();};
   }
-  private toggle(parent:HTMLElement, title:string, key:'headerRule'|'footerRule'|'headingBreaks'|'differentFirstPage'|'firstPageHeaderRule'|'logoFirstPageOnly', hint?:string) {
+  private toggle(parent:HTMLElement, title:string, key:'headerRule'|'footerRule'|'headingBreaks'|'differentFirstPage'|'firstPageHeaderRule'|'logoFirstPageOnly'|'hideEmbeddedNoteMetadata', hint?:string) {
     const row = this.row(parent, title, hint);
     row.element.classList.add('mod-toggle');
     const toggle = this.host.ui.toggle(row.control, this.preset[key], value => {
@@ -339,6 +339,9 @@ export class StudioPanel {
     this.number(page, 'Side margins (mm)', 'marginSide', 15, 40);
     this.toggle(page, 'Page break before headings', 'headingBreaks', 'Start each top-level heading after the first on a new page.');
     page.append(this.el('p', 'ps-tip', 'For a manual page break, add ==== on its own line. Add &&&& on its own line to push the following content to the bottom of the printed page, up to the next break.'));
+
+    const content = this.section('Content');
+    this.toggle(content,'Hide embedded note titles and properties','hideEmbeddedNoteMetadata','Remove generated titles and frontmatter (including tags) from embedded notes. Headings and inline tags in their content stay visible.');
 
     const type = this.section('Typography');
     this.select(type, 'Font', this.preset.font, {sans:'Sans serif',serif:'Serif'}, v=>this.preset.font=v as Preset['font']);

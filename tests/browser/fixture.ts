@@ -1,4 +1,4 @@
-import {validationMarkdown,TEST_IMAGE} from '../fixtures';
+import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml} from '../fixtures';
 import {marked} from 'marked';
 import {StudioPanel} from '../../src/panel';
 import {defaults} from '../../src/settings';
@@ -32,7 +32,7 @@ const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
-  source:async()=>{window.testReads++;return {html:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;return {html:query.has('embeds')?embeddedNoteHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
