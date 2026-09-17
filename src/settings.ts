@@ -1,4 +1,5 @@
 export type Slots = {left: string; center: string; right: string};
+export type SlotFlags = Record<keyof Slots, boolean>;
 export interface Preset {
   id: string; name: string; company: string; logo: string; logoName: string;
   paper: 'A4' | 'Letter'; orientation: 'portrait' | 'landscape';
@@ -6,6 +7,7 @@ export interface Preset {
   border: 'none' | 'solid' | 'double' | 'dashed'; borderWidth: number; color: string;
   font: 'sans' | 'serif'; fontSize: number; lineHeight: number; logoHeight: number;
   header: Slots; footer: Slots; headerRule: boolean; footerRule: boolean; headingBreaks: boolean;
+  headerUppercase: SlotFlags; footerUppercase: SlotFlags; firstPageHeaderUppercase: SlotFlags;
   differentFirstPage: boolean; firstPageMarginTop: number; firstPageLogoHeight: number;
   firstPageHeader: Slots; firstPageHeaderRule: boolean; logoFirstPageOnly: boolean;
 }
@@ -17,6 +19,9 @@ export const DEFAULT_PRESET: Preset = {
   lineHeight: 1.55, logoHeight: 9, header: {left: '{{company}}', center: '', right: '{{title}}'},
   footer: {left: '{{company}}', center: '{{date}}', right: '{{page}} / {{pages}}'},
   headerRule: true, footerRule: true, headingBreaks: false,
+  headerUppercase: {left: false, center: false, right: false},
+  footerUppercase: {left: false, center: false, right: false},
+  firstPageHeaderUppercase: {left: false, center: false, right: false},
   differentFirstPage: false, firstPageMarginTop: 42, firstPageLogoHeight: 18,
   firstPageHeader: {left: '{{company}}', center: '', right: '{{title}}'}, firstPageHeaderRule: true, logoFirstPageOnly: false,
 };
@@ -32,6 +37,7 @@ const bool = (v: unknown, fallback: boolean) => typeof v === 'boolean' ? v : fal
 export function normalizePreset(input: unknown): Preset {
   const v = obj(input), d = DEFAULT_PRESET;
   const slots = (value: unknown, base: Slots): Slots => {const s = obj(value); return {left: str(s.left, base.left), center: str(s.center, base.center), right: str(s.right, base.right)};};
+  const flags = (value: unknown): SlotFlags => {const s = obj(value); return {left: bool(s.left, false), center: bool(s.center, false), right: bool(s.right, false)};};
   return {id: str(v.id, d.id, 100), name: str(v.name, d.name, 80) || 'Untitled preset', company: str(v.company, d.company),
     // Only raster data is persisted; SVG uploads are rasterized before reaching settings.
     logo: typeof v.logo === 'string' && /^data:image\/(png|jpeg|webp);base64,[a-z\d+/=]+$/i.test(v.logo) && v.logo.length < 3_000_000 ? v.logo : '', logoName: str(v.logoName, ''),
@@ -41,6 +47,7 @@ export function normalizePreset(input: unknown): Preset {
     borderWidth: num(v.borderWidth,d.borderWidth,0.3,3), color: typeof v.color === 'string' && /^#[a-f\d]{6}$/i.test(v.color) ? v.color : d.color,
     font: v.font === 'serif' ? 'serif' : 'sans', fontSize:num(v.fontSize,d.fontSize,8,18), lineHeight:num(v.lineHeight,d.lineHeight,1.2,2), logoHeight:num(v.logoHeight,d.logoHeight,4,12),
     header:slots(v.header,d.header), footer:slots(v.footer,d.footer), headerRule:bool(v.headerRule,d.headerRule), footerRule:bool(v.footerRule,d.footerRule), headingBreaks:bool(v.headingBreaks,d.headingBreaks),
+    headerUppercase:flags(v.headerUppercase), footerUppercase:flags(v.footerUppercase), firstPageHeaderUppercase:flags(v.firstPageHeaderUppercase),
     differentFirstPage:bool(v.differentFirstPage,d.differentFirstPage), firstPageMarginTop:num(v.firstPageMarginTop,d.firstPageMarginTop,22,70), firstPageLogoHeight:num(v.firstPageLogoHeight,d.firstPageLogoHeight,4,30),
     firstPageHeader:slots(v.firstPageHeader,d.firstPageHeader), firstPageHeaderRule:bool(v.firstPageHeaderRule,d.firstPageHeaderRule), logoFirstPageOnly:bool(v.logoFirstPageOnly,d.logoFirstPageOnly)};
 }

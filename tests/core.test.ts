@@ -28,6 +28,18 @@ test('paper dimensions correctly follow size and orientation',()=>{
   const p=defaults().presets[0];assert.deepEqual(paperSize(p),[210,297]);assert.deepEqual(paperSize({...p,paper:'Letter',orientation:'landscape'}),[279.4,215.9]);
 });
 
+test('uppercase settings default off and normalize each field independently',()=>{
+  const off={left:false,center:false,right:false};
+  for(const key of ['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const) {
+    assert.deepEqual(normalizePreset({})[key],off);
+    assert.deepEqual(normalizePreset({[key]:{left:true,center:'true',right:1}})[key],{...off,left:true});
+    assert.deepEqual(normalizePreset({[key]:null})[key],off);
+  }
+  const settings=defaults();settings.presets[0].headerUppercase.left=true;
+  assert.equal(settings.presets[1].headerUppercase.left,false);
+  assert.equal(defaults().presets[0].headerUppercase.left,false);
+});
+
 test('recovered preset identities cannot collide with an existing generated-looking identity',()=>{
   const settings=normalizeSettings({presets:[{id:'preset-2'},{id:'x'},{id:'x'}]});
   assert.equal(new Set(settings.presets.map(p=>p.id)).size,3);

@@ -43,6 +43,23 @@ test('header and footer property order does not affect a valid import',()=>{
   assert.equal(importPresets(JSON.stringify(data),settings).presets.length,4);
 });
 
+test('uppercase choices round-trip, older backups default off, and invalid flags are rejected',()=>{
+  const settings=defaults(),preset=settings.presets[0];
+  const keys=['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const;
+  preset.headerUppercase.left=true;preset.footerUppercase.center=true;preset.firstPageHeaderUppercase.right=true;
+  const copy=importPresets(exportPresets([preset]),settings).presets[3];
+  for(const key of keys)assert.deepEqual(copy[key],preset[key]);
+  copy.headerUppercase.left=false;assert.equal(preset.headerUppercase.left,true);
+  const old=JSON.parse(exportPresets([preset]));
+  for(const key of keys)delete old.presets[0][key];
+  const legacy=importPresets(JSON.stringify(old),settings).presets[3];
+  for(const key of keys)assert.deepEqual(legacy[key],{left:false,center:false,right:false});
+  for(const key of keys)for(const invalid of [true,null,[],{left:'true',center:false,right:false},{left:false,center:false}]) {
+    const bad=JSON.parse(exportPresets([preset]));bad.presets[0][key]=invalid;
+    assert.throws(()=>importPresets(JSON.stringify(bad),settings),new RegExp(`invalid ${key}`));
+  }
+});
+
 test('first-page settings round-trip and older backups acquire safe defaults',()=>{
   const settings=defaults(),preset=settings.presets[0];
   preset.differentFirstPage=true;preset.firstPageMarginTop=55;preset.firstPageLogoHeight=25;

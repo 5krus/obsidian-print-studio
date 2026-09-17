@@ -2,6 +2,58 @@ import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 
+test('per-field uppercase resolves placeholders in preview and exports while preserving the note',async({page,browser},testInfo)=>{
+  await page.goto('/test.html?uppercase&firstPage');
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  const preview=page.frameLocator('.ps-frame');
+  const header=preview.locator('.ps-page-header').nth(1);
+  const footer=preview.locator('.ps-page-footer').first();
+  const first=preview.locator('.ps-page-header').first();
+  await expect(header.locator('.left')).toHaveText('Example');
+  await expect(footer.locator('.left')).toHaveText('13 Sep 2026');
+  for(const section of ['Header','Footer','First page']) {
+    const controls=page.locator(`[data-section="${section}"]`);
+    await controls.locator('summary').click();
+    for(const alignment of ['left','center','right']) {
+      const toggle=controls.getByRole('switch',{name:`Uppercase ${alignment}`,exact:true});
+      await expect(toggle).not.toBeChecked();await toggle.click();
+    }
+  }
+  await expect(page.getByRole('status')).toContainText('Ready to print');
+  await expect(header.locator('.left')).toHaveText('EXAMPLE');
+  await expect(header.locator('.center')).toHaveText('TEST VAULT');
+  await expect(header.locator('.right')).toHaveText('PRINT STUDIO TEST');
+  await expect(footer.locator('.left')).toHaveText('13 SEP 2026');
+  await expect(footer.locator('.center')).toHaveText('ACME');
+  await expect(footer.locator('.right')).toHaveText('PAGE 1 / 2');
+  await expect(first.locator('.left')).toHaveText('PREPARED FOR CAFÉ');
+  await expect(first.locator('.center')).toHaveText('EXAMPLE');
+  await expect(first.locator('.right')).toHaveText('ACME');
+  await expect(preview.getByRole('heading',{name:'Example',exact:true})).toBeVisible();
+  await expect(preview.getByText('Mixed case body stays unchanged.',{exact:true})).toBeVisible();
+  const controls=page.locator('[data-section="Header"]');
+  await expect(controls.getByRole('textbox',{name:'Left',exact:true})).toHaveValue('{{title}}');
+  const saved=await page.evaluate(()=>window.testSaved) as {presets:Array<{headerUppercase:unknown;footerUppercase:unknown;firstPageHeaderUppercase:unknown}>};
+  for(const key of ['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const)expect(saved.presets[0][key]).toEqual({left:true,center:true,right:true});
+  await controls.getByRole('switch',{name:'Uppercase left',exact:true}).click();
+  await expect(header.locator('.left')).toHaveText('Example');
+  await expect(header.locator('.center')).toHaveText('TEST VAULT');
+  await expect(first.locator('.center')).toHaveText('EXAMPLE');
+  await page.getByRole('button',{name:'Undo change',exact:true}).click();
+  await expect(header.locator('.left')).toHaveText('EXAMPLE');
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export HTML',exact:true}).click();
+  const html=await readFile((await (await downloadPromise).path())!,'utf8');
+  const output=await browser.newPage();
+  await output.setContent(html);await output.evaluate(()=>document.fonts.ready);
+  await expect(output.locator('.ps-page-header').nth(1).locator('.left')).toHaveText('EXAMPLE');
+  const pdf=testInfo.outputPath('uppercase.pdf');
+  await output.pdf({path:pdf,preferCSSPageSize:true,printBackground:true});
+  const text=execFileSync('pdftotext',['-layout',pdf,'-'],{encoding:'utf8'});
+  for(const value of ['EXAMPLE','13 SEP 2026','ACME','PREPARED FOR CAFÉ','Example','Mixed case body stays unchanged.'])expect(text).toContain(value);
+  await output.close();
+});
+
 for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landscape'])for(const firstPage of [false,true]) {
   test(`${paper} ${orientation}${firstPage?' first-page letterhead':''}: all content and page furniture survive PDF export`,async({page,browser},testInfo)=>{
     const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));

@@ -60,7 +60,9 @@ async function run() {
         const slot=document.createElement('div');slot.className=`ps-slot ${alignment}`;
         if(location==='header' && alignment==='left' && job.preset.logo && (index===0 || !job.preset.logoFirstPageOnly)) {const img=document.createElement('img');img.src=job.preset.logo;img.alt=job.preset.company || 'Company logo';img.className='ps-logo';slot.append(img);}
         const slots=location==='header' && first?job.preset.firstPageHeader:job.preset[location];
-        const text=document.createElement('span');text.textContent=expandTemplate(slots[alignment],job.context,job.preset.company,index+1,all.length);slot.append(text);band.append(slot);
+        const uppercase=location==='header' && first?job.preset.firstPageHeaderUppercase:job.preset[`${location}Uppercase`];
+        const expanded=expandTemplate(slots[alignment],job.context,job.preset.company,index+1,all.length);
+        const text=document.createElement('span');text.textContent=uppercase[alignment]?expanded.toUpperCase():expanded;slot.append(text);band.append(slot);
       }
       box.append(band);
     }

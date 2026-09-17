@@ -2,7 +2,7 @@ import type {Settings} from './settings';
 
 // Copy mutable objects while sharing immutable logo strings between entries.
 function copy(settings:Settings):Settings {
-  return {...settings,presets:settings.presets.map(p=>({...p,header:{...p.header},footer:{...p.footer},firstPageHeader:{...p.firstPageHeader}}))};
+  return {...settings,presets:settings.presets.map(p=>({...p,header:{...p.header},footer:{...p.footer},firstPageHeader:{...p.firstPageHeader},headerUppercase:{...p.headerUppercase},footerUppercase:{...p.footerUppercase},firstPageHeaderUppercase:{...p.firstPageHeaderUppercase}}))};
 }
 
 export class PresetHistory {

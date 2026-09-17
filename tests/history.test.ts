@@ -24,3 +24,16 @@ test('history is bounded and restores imports and removals along with active sel
   let steps=0;while(history.undo())steps++;
   assert.equal(steps,20);
 });
+
+test('uppercase toggles undo and redo without sharing mutable flags',()=>{
+  const settings=defaults(),history=new PresetHistory(settings);
+  for(const key of ['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const)settings.presets[0][key].left=true;
+  history.record(settings);
+  const before=history.undo()!;
+  for(const key of ['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const) {
+    assert.equal(before.presets[0][key].left,false);
+    before.presets[0][key].right=true;
+  }
+  const after=history.redo()!;
+  for(const key of ['headerUppercase','footerUppercase','firstPageHeaderUppercase'] as const)assert.deepEqual(after.presets[0][key],{left:true,center:false,right:false});
+});

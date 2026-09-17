@@ -26,6 +26,8 @@ Prepared for {{meta:client}}
 {{page}} / {{pages}}
 ```
 
+Enable **Uppercase left**, **Uppercase center**, or **Uppercase right** below a header/footer field to capitalize its printed text, including resolved placeholders (for example, `Example` becomes `EXAMPLE`). Each field has its own switch, including the separate first-page header. Your note and template text keep their original capitalization; the setting applies to preview, PDF, and HTML output and saves with the preset.
+
 Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `====` on its own line, with blank lines around it, outside a code fence. The marker is hidden in the note editor until the cursor or selection reaches its line. Existing `<!-- pagebreak -->` markers also work. Frontmatter is omitted from the printed body.
 
 For a bottom-aligned cover, put `&&&&` on its own line before the title and other cover text, then `====` after it. The space above that text expands to fill the printed page. Without a following break, alignment continues to the end of the note. The spacer is hidden in the editor until its line is active and adds no space to the ordinary note. Content too long for one page flows normally, with its last page aligned to the bottom.

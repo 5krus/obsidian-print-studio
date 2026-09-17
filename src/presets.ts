@@ -28,10 +28,10 @@ export function importPresets(text: string, settings: Settings): Settings {
     const preset = normalizePreset(input);
     for (const key of Object.keys(DEFAULT_PRESET) as (keyof Preset)[]) {
       if (key === 'id') continue;
-      // These additive settings were absent from 0.2.0 version 1 exports.
-      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly'].includes(key) && !Object.hasOwn(input,key))continue;
+      // Additive settings may be absent from older version 1 exports.
+      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly','headerUppercase','footerUppercase','firstPageHeaderUppercase'].includes(key) && !Object.hasOwn(input,key))continue;
       const invalid=()=>new Error(`Preset ${index + 1} has an invalid ${key} value.`);
-      if(key==='header' || key==='footer' || key==='firstPageHeader') {
+      if(key==='header' || key==='footer' || key==='firstPageHeader' || key==='headerUppercase' || key==='footerUppercase' || key==='firstPageHeaderUppercase') {
         const slots=input[key];
         if(!slots || typeof slots!=='object' || Array.isArray(slots))throw invalid();
         for(const slot of ['left','center','right'] as const)if((slots as Record<string,unknown>)[slot]!==preset[key][slot])throw invalid();

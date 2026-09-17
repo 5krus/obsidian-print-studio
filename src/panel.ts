@@ -224,7 +224,7 @@ export class StudioPanel {
     input.oninput = () => {set(input.value); this.change(input);};
     return input;
   }
-  private multiline(parent:HTMLElement, title:string, value:string, set:(v:string)=>void) {
+  private multiline(parent:HTMLElement, title:string, value:string, set:(v:string)=>void, uppercase:boolean, setUppercase:(v:boolean)=>void) {
     const row = this.row(parent, title, undefined, true);
     const input = this.host.ui.text(row.control, value, true) as HTMLTextAreaElement;
     input.rows = 2;
@@ -242,6 +242,9 @@ export class StudioPanel {
       if(input.value.length-(end-start)+token.length>input.maxLength){this.host.notify('Header and footer text is limited to 300 characters.');return;}
       input.setRangeText(token,start,end,'end');set(input.value);this.change();input.focus();
     };
+    const uppercaseRow=this.row(parent,`Uppercase ${title.toLowerCase()}`,'Print this field in uppercase, including placeholder values.');
+    uppercaseRow.element.classList.add('mod-toggle');
+    this.describe(this.host.ui.toggle(uppercaseRow.control,uppercase,value=>{setUppercase(value);this.change();}),uppercaseRow);
   }
   private updatePlaceholders() {
     for(const picker of this.controls.querySelectorAll<HTMLSelectElement>('.ps-placeholder-picker')) {
@@ -350,7 +353,7 @@ export class StudioPanel {
 
     for(const location of ['header','footer'] as const) {
       const band=this.section(location==='header'?'Header':'Footer');
-      for(const alignment of ['left','center','right'] as const) this.multiline(band, alignment[0].toUpperCase()+alignment.slice(1), this.preset[location][alignment], v=>this.preset[location][alignment]=v);
+      for(const alignment of ['left','center','right'] as const) this.multiline(band, alignment[0].toUpperCase()+alignment.slice(1), this.preset[location][alignment], v=>this.preset[location][alignment]=v, this.preset[`${location}Uppercase`][alignment], v=>this.preset[`${location}Uppercase`][alignment]=v);
       this.toggle(band, 'Show dividing line', location==='header'?'headerRule':'footerRule');
     }
     const first=this.section('First page');
@@ -359,7 +362,7 @@ export class StudioPanel {
     if(this.preset.differentFirstPage) {
       this.number(first,'First-page top margin (mm)','firstPageMarginTop',22,70);
       this.number(first,'First-page logo height (mm)','firstPageLogoHeight',4,30);
-      for(const alignment of ['left','center','right'] as const)this.multiline(first,alignment[0].toUpperCase()+alignment.slice(1),this.preset.firstPageHeader[alignment],v=>this.preset.firstPageHeader[alignment]=v);
+      for(const alignment of ['left','center','right'] as const)this.multiline(first,alignment[0].toUpperCase()+alignment.slice(1),this.preset.firstPageHeader[alignment],v=>this.preset.firstPageHeader[alignment]=v,this.preset.firstPageHeaderUppercase[alignment],v=>this.preset.firstPageHeaderUppercase[alignment]=v);
       this.toggle(first,'Show dividing line','firstPageHeaderRule');
     }
     const tokens = this.section('Text placeholders');

@@ -23,11 +23,16 @@ if(query.has('firstPage')) {
 if(query.has('overflow')) {
   preset.header.left='Long header text '.repeat(17);preset.footer.right='Long footer text '.repeat(17);
 }
+if(query.has('uppercase')) {
+  preset.header={left:'{{title}}',center:'{{vault}}',right:'{{company}}'};
+  preset.footer={left:'{{date}}',center:'{{meta:client}}',right:'Page {{page}} / {{pages}}'};
+  preset.firstPageHeader={left:'Prepared for café',center:'{{title}}',right:'{{meta:client}}'};
+}
 const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n\n# COVER-TITLE\n\n${query.has('longCover')?Array.from({length:45},(_,i)=>`COVER-ROW-${i} ${'Cover content. '.repeat(15)}\n\n`).join(''):''}Cover subtitle\n\n&&&&\n\nCOVER-AUTHOR${query.has('noBreak')?'':'\n\n====\n\n# BODY-START\n\nBody content.'}`:query.has('overflow')?'<h1>Oversized row</h1><table><tr><td>'+Array.from({length:100},(_,i)=>`Line ${i}<br>`).join('')+'</td></tr></table>':validationMarkdown(preset.logo);
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
-  source:async()=>{window.testReads++;return {html:await marked.parse(prepareMarkdown(markdown)),context:{title:'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;return {html:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
