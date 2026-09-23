@@ -1,3 +1,4 @@
+import type {OutputRequest} from './native-print';
 import DOMPurify from 'dompurify';
 import {frameDocument} from './document';
 import {normalizePreset, type Settings, type Preset} from './settings';
@@ -13,6 +14,7 @@ export interface StudioHost {
   source():Promise<{html:string;context:DocumentContext;warnings:string[]}>;
   save(settings:Settings):Promise<void>;
   notify(message:string):void;
+  output?(request:OutputRequest):Promise<void>;
 }
 
 export class StudioPanel {
@@ -24,6 +26,10 @@ export class StudioPanel {
   private status:HTMLElement;
   private printButton:HTMLButtonElement;
   private exportButton:HTMLButtonElement;
+  private pdfButton:HTMLButtonElement;
+  private outputBusy=false;
+  private outputTimer:number|undefined;
+  private pendingOutput?:Omit<OutputRequest,'html'> & {token:string};
   private controls:HTMLElement;
   private pageInput:HTMLInputElement;
   private pageTotal:HTMLElement;
@@ -56,10 +62,11 @@ export class StudioPanel {
   private onMessage=(event:MessageEvent<unknown>)=>{
     const message=frameMessage(event.data);
     if(event.source!==this.frame.contentWindow || !message || message.token!==this.token || this.disposed) return;
-    if(message.type==='ready') {this.syncTheme();window.clearTimeout(this.timeout);this.status.textContent=`${message.pages} ${message.pages===1?'page':'pages'} · Ready to print`;this.printButton.disabled=false;this.exportButton.disabled=false;this.pageCount=message.pages;this.currentPage=Math.min(this.currentPage,this.pageCount);this.updateNavigation();this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');this.goToPage(this.currentPage);this.renderNotes();}
+    if(message.type==='ready') {this.syncTheme();window.clearTimeout(this.timeout);this.status.textContent=`${message.pages} ${message.pages===1?'page':'pages'} · Ready to print`;this.printButton.disabled=this.outputBusy;this.pdfButton.disabled=this.outputBusy;this.exportButton.disabled=false;this.pageCount=message.pages;this.currentPage=Math.min(this.currentPage,this.pageCount);this.updateNavigation();this.frame.contentWindow?.postMessage({type:'zoom',value:this.zoomSelect.value,token:this.token},'*');this.goToPage(this.currentPage);this.renderNotes();}
     if(message.type==='viewport' && this.pageCount && Number.isInteger(message.page)) {this.currentPage=Math.min(this.pageCount,Math.max(1,message.page));this.updateNavigation(this.pageInput.ownerDocument.activeElement===this.pageInput);}
     if(message.type==='warnings') {this.layoutWarnings=message.warnings;this.renderNotes();}
     if(message.type==='error') {this.disablePreview();window.clearTimeout(this.timeout);this.status.textContent='Preview failed';this.host.notify('Print Studio: '+String(message.message));}
+    if(message.type==='output')void this.finishOutput(message);
     if(message.type==='exported' && typeof message.html==='string') this.download(message.html, `${this.safeFilename(this.title)} — Print Studio.html`, 'text/html;charset=utf-8');
   };
   constructor(private root:HTMLElement, private host:StudioHost) {
@@ -77,8 +84,9 @@ export class StudioPanel {
     const actions = this.el('div', 'ps-actions');
     host.ui.button(actions, 'Refresh note', () => void this.render(true), {icon: 'refresh-cw'});
     this.exportButton = host.ui.button(actions, 'Export HTML', () => this.frame.contentWindow?.postMessage({type:'export', token:this.token}, '*'), {tooltip:'Export pages as a self-contained HTML document'});
-    this.printButton = host.ui.button(actions, 'Print / Save PDF', () => this.frame.contentWindow?.postMessage({type:'print', token:this.token}, '*'), {primary:true});
-    this.printButton.classList.add('ps-primary');
+    this.printButton = host.ui.button(actions, 'Print', () => this.requestOutput('print'));
+    this.pdfButton = host.ui.button(actions, 'Save PDF', () => this.requestOutput('pdf'), {primary:true,tooltip:'Save a PDF with the preview’s paper size and orientation'});
+    this.pdfButton.classList.add('ps-primary');
     top.append(actions);
 
     const body = this.el('div', 'ps-workbench');
@@ -138,7 +146,8 @@ export class StudioPanel {
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   private disablePreview() {
-    this.printButton.disabled=true;this.exportButton.disabled=true;
+    if(this.pendingOutput){this.pendingOutput=undefined;this.resetOutput();}
+    this.printButton.disabled=true;this.pdfButton.disabled=true;this.exportButton.disabled=true;
     this.pageCount=0;this.updateNavigation();this.layoutWarnings=[];this.renderNotes();
   }
   private renderNotes() {
@@ -155,7 +164,27 @@ export class StudioPanel {
       }
       this.notes.append(details);
     }
-    if(!this.sourceWarnings.length && !this.layoutWarnings.length)this.notes.append(this.el('span','','Print tip: choose the same paper size, 100% scale, no browser headers/footers, and enable background graphics.'));
+    this.notes.append(this.el('span','',`Save PDF uses ${this.preset.paper} ${this.preset.orientation} at actual size. Print sends the same settings to your printer; check them if you change printers.`));
+  }
+  private requestOutput(kind:'pdf'|'print') {
+    if(this.outputBusy || !this.pageCount || !this.token)return;
+    if(!this.host.output){this.host.notify('Printing is unavailable. Export HTML and print it from a desktop browser.');return;}
+    this.outputBusy=true;this.printButton.disabled=true;this.pdfButton.disabled=true;
+    this.pendingOutput={kind,token:this.token,preset:structuredClone(this.preset),title:this.safeFilename(this.title)};
+    this.outputTimer=window.setTimeout(()=>{this.pendingOutput=undefined;this.resetOutput();this.host.notify('Could not prepare the print document. Please try again.');},30_000);
+    this.frame.contentWindow?.postMessage({type:kind,token:this.token},'*');
+  }
+  private resetOutput() {
+    window.clearTimeout(this.outputTimer);this.outputBusy=false;
+    if(!this.disposed){this.printButton.disabled=!this.pageCount;this.pdfButton.disabled=!this.pageCount;}
+  }
+  private async finishOutput(message:{token:string;kind:'pdf'|'print';html:string}) {
+    const pending=this.pendingOutput;
+    if(!pending || pending.token!==message.token || pending.kind!==message.kind)return;
+    this.pendingOutput=undefined;window.clearTimeout(this.outputTimer);
+    try {await this.host.output!({...pending,html:message.html});}
+    catch(error){if(!this.disposed)this.host.notify(`Print Studio: ${error instanceof Error?error.message:String(error)}`);}
+    finally {this.resetOutput();}
   }
   private updateNavigation(preserveInput=false) {
     this.previousButton.disabled=this.pageCount===0 || this.currentPage<=1;
@@ -410,5 +439,5 @@ export class StudioPanel {
       this.timeout=window.setTimeout(()=>{if(!this.disposed && revision===this.revision)this.status.textContent='This note is taking longer to paginate. Try refreshing the note.';},30000);
     }catch(error){if(revision!==this.revision || this.disposed)return;this.status.textContent='Could not render this note';this.host.notify(error instanceof Error?error.message:String(error));}
   }
-  dispose(){this.disposed=true;this.themeObserver.disconnect();++this.revision;window.clearTimeout(this.timer);window.clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
+  dispose(){this.disposed=true;window.clearTimeout(this.outputTimer);this.pendingOutput=undefined;this.themeObserver.disconnect();++this.revision;window.clearTimeout(this.timer);window.clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
 }

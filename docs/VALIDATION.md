@@ -1,5 +1,15 @@
 # Print Studio validation
 
+## 0.3.9 paper size and direct PDF saving
+
+- Replaced iframe `window.print()` with separate **Save PDF** and **Print** actions. The desktop adapter receives a frozen, script-free copy of the paginated preview and its selected preset.
+- PDF generation explicitly selects paper size, orientation, CSS page size, scale 1, background graphics, no browser headers/footers, and zero additional margins. Physical printing passes the equivalent settings to Electron with `silent: false`.
+- Lint, 46 unit tests, TypeScript/build, and all 21 browser/PDF tests pass. Output regressions cover unsolicited, duplicate and stale frame messages, busy buttons, failure recovery, save cancellation, print cancellation, and hidden-window cleanup.
+- The browser matrix now exercises the actual Save PDF and Print message paths at 150% preview zoom, verifies every PDF page’s dimensions, and compares all extracted text with the HTML export.
+- Native verification on Linux, Obsidian 1.13.7 / Electron 43.3.0, runs the production desktop PDF adapter against all eight A4/Letter × portrait/landscape × normal/first-page-letterhead snapshots. All page dimensions and counts match, and all 65 table rows, 12 paragraphs, and end marker survive. Only the filename dialog is substituted with a test output path; BrowserWindow and printToPDF are real.
+- Reproduce with `npm run test:browser` followed by `node scripts/validate-native.mjs` while Obsidian is running with its CLI enabled. Generated PDFs stay in `test-results/`.
+- No physical print job was submitted. Printer-driver overrides and Windows/macOS dialogs remain unverified.
+
 ## 0.3.7 embedded-note metadata
 
 - Lint, 42 unit tests, TypeScript/build, and 21 browser/PDF tests cover the release.

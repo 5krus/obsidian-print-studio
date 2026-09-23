@@ -36,7 +36,9 @@ For a bottom-aligned cover, put `&&&&` on its own line before the title and othe
 
 ## Print and export
 
-Choose **Print / Save PDF** once the preview is ready. In the print dialog, match the preview’s paper size and orientation, use **100% scale** and **no added margins**, disable browser headers/footers, and enable background graphics.
+Choose **Save PDF** once the preview is ready. Select a filename and Print Studio saves the finished pages using your selected **A4 or Letter** size and **portrait or landscape** orientation, at actual size. Preview zoom and the system printer’s default paper size do not affect the PDF.
+
+Choose **Print** for a physical printer. Print Studio sends the selected paper size and orientation, 100% scale, no added margins, and background graphics to the system dialog. Check the settings if you switch printers; printer drivers can override them.
 
 **Export HTML** downloads the finished pages with embedded styles and images, without JavaScript. Open it in a desktop Chromium-based browser to print if the system dialog is unavailable in Obsidian. Preview zoom does not affect output size.
 
@@ -60,7 +62,7 @@ npm run check     # lint, unit tests, and build
 npm run package   # local installable folder and ZIP
 ```
 
-`npm run test:browser` runs the browser/PDF suite and requires Chromium and Poppler. CI runs validation and packaging; the separate release workflow builds attested installer assets. See the [release and provenance guide](docs/COMMUNITY_SUBMISSION.md).
+`npm run test:browser` runs the browser/PDF suite and requires Chromium and Poppler. `node scripts/validate-native.mjs` then verifies all eight paper/orientation/letterhead snapshots through the real Electron PDF engine in a running Obsidian instance with its CLI enabled. It uses synthetic content, writes only to `test-results/`, and does not submit physical print jobs. CI runs validation and packaging; the separate release workflow builds attested installer assets. See the [release and provenance guide](docs/COMMUNITY_SUBMISSION.md).
 
 ## Support and license
 

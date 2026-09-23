@@ -36,9 +36,10 @@ window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,
   source:async()=>{window.testReads++;return {html:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  output:async request=>{window.testOutput=request;},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
-declare global {interface Window {testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;testReads:number;}}
+declare global {interface Window {testOutput:import('../../src/native-print').OutputRequest;testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;testReads:number;}}
 window.testPanel=panel;window.testNotices=[];
 window.addEventListener('message',event=>{if(event.data?.type==='exported')window.testExport=event.data.html;if(event.data?.type==='ready')window.testPages=event.data.pages;});

@@ -110,13 +110,15 @@ async function run() {
     if(message.type==='theme')document.documentElement.style.colorScheme=message.scheme==='dark'?'dark':'light';
     if(message.type==='page')goToPage(Number(message.page));
     if(message.type==='zoom' && ['fit','0.5','0.75','1','1.25','1.5','2'].includes(message.value)){zoom=message.value;applyZoom();}
-    if(message.type==='print'){window.focus();window.print();}
-    if(message.type==='export'){
+    if(message.type==='export' || message.type==='pdf' || message.type==='print'){
       // Export at actual size, regardless of the current preview magnification.
       const clone=document.documentElement.cloneNode(true) as HTMLElement;
       clone.querySelectorAll('script').forEach(script=>script.remove());
       clone.querySelector<HTMLElement>('.pagedjs_pages')!.style.removeProperty('zoom');
-      send('exported',{html:'<!doctype html>\n'+clone.outerHTML});
+      clone.querySelector('meta[http-equiv="Content-Security-Policy"]')!.setAttribute('content',"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none';");
+      const html='<!doctype html>\n'+clone.outerHTML;
+      if(message.type==='export')send('exported',{html});
+      else send('output',{kind:message.type,html});
     }
   });
   send('ready',{pages:pages.total});

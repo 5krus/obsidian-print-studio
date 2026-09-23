@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
-import {readFile} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
 
 test('embedded titles and properties can be hidden without leaving space or changing body content',async({page,browser},testInfo)=>{
   await page.goto('/test.html?embeds');
@@ -147,6 +147,28 @@ for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landsca
     for(let i=1;i<=pages;i++)expect(text).toMatch(new RegExp(`${i}\\s*/\\s*${pages}`));
     expect(text).toContain('Completed checklist item');expect(text).toContain('Pending checklist item');
     await testInfo.attach('Generated PDF',{path:pdf,contentType:'application/pdf'});
+    // Exercise the production Save PDF message path, including snapshotting at
+    // non-default preview zoom. The desktop adapter receives the chosen preset.
+    await page.getByRole('button',{name:'Save PDF',exact:true}).click();
+    await expect.poll(()=>page.evaluate(()=>window.testOutput?.kind)).toBe('pdf');
+    const request=await page.evaluate(()=>window.testOutput);
+    expect(request.preset.paper).toBe(paper);expect(request.preset.orientation).toBe(orientation);
+    expect(request.html).not.toContain('<script');expect(request.html).not.toContain('zoom: 1.5');
+    expect(request.html).toContain("script-src 'none'");
+    await writeFile(testInfo.outputPath('native-request.json'),JSON.stringify(request));
+    await output.setContent(request.html);await output.evaluate(()=>document.fonts.ready);
+    const direct=testInfo.outputPath('direct.pdf');
+    await output.pdf({path:direct,format:request.preset.paper,landscape:orientation==='landscape',preferCSSPageSize:true,scale:1,printBackground:true,displayHeaderFooter:false,margin:{top:0,bottom:0,left:0,right:0}});
+    const directInfo=execFileSync('pdfinfo',['-f','1','-l',String(pages),direct],{encoding:'utf8'});
+    expect(Number(directInfo.match(/Pages:\s+(\d+)/)?.[1])).toBe(pages);
+    const allSizes=[...directInfo.matchAll(/Page\s+\d+ size:\s+([\d.]+) x ([\d.]+)/g)];
+    expect(allSizes).toHaveLength(pages);
+    for(const dimensions of allSizes){expect(Math.abs(Number(dimensions[1])-size[0])).toBeLessThan(1);expect(Math.abs(Number(dimensions[2])-size[1])).toBeLessThan(1);}
+    expect(execFileSync('pdftotext',['-layout',direct,'-'],{encoding:'utf8'})).toBe(text);
+    await page.getByRole('button',{name:'Print',exact:true}).click();
+    await expect.poll(()=>page.evaluate(()=>window.testOutput?.kind)).toBe('print');
+    expect(await page.evaluate(()=>window.testOutput.preset.paper)).toBe(paper);
+    expect(await page.evaluate(()=>window.testOutput.html)).toBe(request.html);
     await output.close();expect(errors).toEqual([]);
   });
 }

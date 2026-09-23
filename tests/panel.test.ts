@@ -167,3 +167,28 @@ test('queued viewport reports cannot replace a page number while it is being edi
     assert.equal(input.value,'3');
   }finally{panel.dispose();}
 });
+
+test('PDF and print requests reject unsolicited, duplicate and stale snapshots and recover after failure',async()=>{
+  const calls:import('../src/native-print').OutputRequest[]=[];const notices:string[]=[];
+  let rejectOutput:(error:Error)=>void=()=>{};
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>source,save:async()=>{},notify:m=>notices.push(m),output:request=>{calls.push(request);return new Promise((_,reject)=>{rejectOutput=reject;});}});
+  try {
+    await tick();send({type:'ready',pages:3});
+    send({type:'output',kind:'pdf',html:'unsolicited'});assert.equal(calls.length,0);
+    button('Save PDF').click();assert.equal(button('Print').disabled,true);
+    send({type:'output',kind:'print',html:'wrong action'});assert.equal(calls.length,0);
+    send({type:'output',kind:'pdf',html:'finished pages'});
+    send({type:'output',kind:'pdf',html:'duplicate'});assert.equal(calls.length,1);
+    assert.equal(calls[0].preset.paper,'A4');assert.equal(calls[0].html,'finished pages');
+    rejectOutput(new Error('Disk is full'));await tick();
+    assert.match(notices.at(-1)!,/Disk is full/);assert.equal(button('Save PDF').disabled,false);
+    button('Print').click();const stale=job().token;
+    await panel.render();send({type:'ready',pages:3});
+    send({type:'output',token:stale,kind:'print',html:'stale'});assert.equal(calls.length,1);
+    assert.equal(button('Print').disabled,false);
+    button('Print').click();send({type:'output',kind:'print',html:'new pages'});
+    assert.equal(calls.length,2);assert.equal(calls[1].kind,'print');
+    rejectOutput(new Error('Printer unavailable'));await tick();
+    assert.equal(button('Print').disabled,false);
+  }finally{panel.dispose();}
+});

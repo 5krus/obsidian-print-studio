@@ -7,7 +7,7 @@ The plugin ID is `print-studio`, the repository is `5krus/obsidian-print-studio`
 ## Prepare an update
 
 1. Update `manifest.json`, `package.json`, `package-lock.json`, `versions.json`, and the matching `docs/release-VERSION.md` notes.
-2. Run the checks below and smoke-test in desktop Obsidian, including existing presets, preview navigation, HTML export and Print / Save PDF.
+2. Run the checks below and smoke-test in desktop Obsidian, including existing presets, preview navigation, HTML export, Save PDF, and Print.
 3. Push to `main` and confirm **Validate plugin** passes for the intended commit.
 4. Run the attested release workflow, verify the assets, then publish its draft as a normal release. Use the existing community listing to review the new version's scan results.
 
