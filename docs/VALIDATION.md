@@ -1,5 +1,15 @@
 # Print Studio validation
 
+## 0.3.11 printer media and image compatibility
+
+- Lint, 52 unit tests, TypeScript/build, and all 22 browser/PDF tests passed.
+- New regressions verify explicit CUPS A4/Letter and orientation options, printer discovery, copy-count validation, temporary-file cleanup on success/failure, PDF page dimensions and viewer preferences, and preservation of image bytes and transparency masks.
+- A browser-generated transparent diagram is processed by the production PDF adapter, converted with Ghostscript, and rendered with Poppler. Red/blue diagram areas and selectable text survive. Ghostscript is now required in CI and release validation.
+- All 16 outputs (Save PDF and Linux Print across eight paper/orientation/letterhead snapshots) passed in the real Obsidian Electron engine. Page counts, all page dimensions, 65 table rows, 12 paragraphs, and end markers were verified; physical submission is substituted with a file capture.
+- The fix also preserved both images in the locally reported PDF through the same Ghostscript conversion that previously removed them. That private document is not included in tests or release assets.
+- The printer/copies dialog was also exercised inside Obsidian: system printer discovery, A4 summary, and cancellation passed without submitting a physical job.
+- Windows/macOS physical print dialogs and physical printing of this release remain manual checks.
+
 ## 0.3.9 paper size and direct PDF saving
 
 - Replaced iframe `window.print()` with separate **Save PDF** and **Print** actions. The desktop adapter receives a frozen, script-free copy of the paginated preview and its selected preset.

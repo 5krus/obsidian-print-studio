@@ -38,7 +38,11 @@ For a bottom-aligned cover, put `&&&&` on its own line before the title and othe
 
 Choose **Save PDF** once the preview is ready. Select a filename and Print Studio saves the finished pages using your selected **A4 or Letter** size and **portrait or landscape** orientation, at actual size. Preview zoom and the system printer’s default paper size do not affect the PDF.
 
-Choose **Print** for a physical printer. Print Studio sends the selected paper size and orientation, 100% scale, no added margins, and background graphics to the system dialog. Check the settings if you switch printers; printer drivers can override them.
+On **Linux**, choose **Print**, select your system printer and copy count, then confirm. Print Studio sends the selected A4/Letter size and orientation directly to the print queue, fits pages to the printable area, and prints single-sided. This avoids both the Obsidian/Electron native-dialog crash and a PDF viewer overriding your paper size. A configured CUPS printer and the `lp`/`lpstat` commands are required.
+
+Saved PDFs use exact standard page dimensions and include paper-selection hints for viewers that support them. The export also corrects a Chromium colour-profile incompatibility that can make images disappear in printer conversion, while retaining text, transparency, and original image resolution. When printing a saved PDF from another app, choose the matching paper size and fit to printable area; that app can override the PDF’s hints.
+
+On **Windows and macOS**, choose **Print** for a physical printer. Print Studio sends the selected paper size and orientation, 100% scale, no added margins, and background graphics to the system dialog. Check the settings if you switch printers; printer drivers can override them.
 
 **Export HTML** downloads the finished pages with embedded styles and images, without JavaScript. Open it in a desktop Chromium-based browser to print if the system dialog is unavailable in Obsidian. Preview zoom does not affect output size.
 
@@ -46,7 +50,7 @@ Choose **Print** for a physical printer. Print Studio sends the selected paper s
 
 Standard Markdown and vault image attachments are supported. Remote, missing, or oversized attachments (over 10 MB) become labeled placeholders. Embedded notes/PDFs, dynamic plugin blocks, and complex MathJax/Mermaid content may not render faithfully. Check the preview; long rows or header/footer text may need simpler formatting or larger margins.
 
-Print Studio reads the current note and resolves referenced images through targeted vault lookups. It does not enumerate the vault. Presets and logos live in the plugin’s `data.json`, which may be synchronized by your vault setup. Outside-vault access is limited to logo/preset files you select and exports you save.
+Print Studio reads the current note and resolves referenced images through targeted vault lookups. It does not enumerate the vault. Presets and logos live in the plugin’s `data.json`, which may be synchronized by your vault setup. Outside-vault files are limited to logo/preset files you select, exports you save, and temporary PDFs removed after Linux print submission. Confirmed print jobs go to the system printer you select.
 
 No accounts, payments, telemetry, or cloud services are required. Print Studio makes no network requests of its own. Obsidian or enabled Markdown plugins may load remote resources during initial note rendering; the isolated print preview blocks network access.
 
@@ -62,7 +66,7 @@ npm run check     # lint, unit tests, and build
 npm run package   # local installable folder and ZIP
 ```
 
-`npm run test:browser` runs the browser/PDF suite and requires Chromium and Poppler. `node scripts/validate-native.mjs` then verifies all eight paper/orientation/letterhead snapshots through the real Electron PDF engine in a running Obsidian instance with its CLI enabled. It uses synthetic content, writes only to `test-results/`, and does not submit physical print jobs. CI runs validation and packaging; the separate release workflow builds attested installer assets. See the [release and provenance guide](docs/COMMUNITY_SUBMISSION.md).
+`npm run test:browser` runs the browser/PDF suite and requires Chromium, Poppler, and Ghostscript. `node scripts/validate-native.mjs` then verifies both Save PDF and Linux Print for all eight paper/orientation/letterhead snapshots through the real Electron PDF engine in a running Obsidian instance with its CLI enabled. It uses synthetic content, writes only to `test-results/`, and does not submit physical print jobs. CI runs validation and packaging; the separate release workflow builds attested installer assets. See the [release and provenance guide](docs/COMMUNITY_SUBMISSION.md).
 
 ## Support and license
 

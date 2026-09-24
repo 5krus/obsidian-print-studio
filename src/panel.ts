@@ -14,6 +14,7 @@ export interface StudioHost {
   source():Promise<{html:string;context:DocumentContext;warnings:string[]}>;
   save(settings:Settings):Promise<void>;
   notify(message:string):void;
+  linuxPrint?:boolean;
   output?(request:OutputRequest):Promise<void>;
 }
 
@@ -84,7 +85,7 @@ export class StudioPanel {
     const actions = this.el('div', 'ps-actions');
     host.ui.button(actions, 'Refresh note', () => void this.render(true), {icon: 'refresh-cw'});
     this.exportButton = host.ui.button(actions, 'Export HTML', () => this.frame.contentWindow?.postMessage({type:'export', token:this.token}, '*'), {tooltip:'Export pages as a self-contained HTML document'});
-    this.printButton = host.ui.button(actions, 'Print', () => this.requestOutput('print'));
+    this.printButton = host.ui.button(actions, 'Print', () => this.requestOutput('print'), {tooltip:host.linuxPrint?'Choose a printer and print with the selected paper size':'Open the system print dialog'});
     this.pdfButton = host.ui.button(actions, 'Save PDF', () => this.requestOutput('pdf'), {primary:true,tooltip:'Save a PDF with the preview’s paper size and orientation'});
     this.pdfButton.classList.add('ps-primary');
     top.append(actions);
@@ -164,7 +165,7 @@ export class StudioPanel {
       }
       this.notes.append(details);
     }
-    this.notes.append(this.el('span','',`Save PDF uses ${this.preset.paper} ${this.preset.orientation} at actual size. Print sends the same settings to your printer; check them if you change printers.`));
+    this.notes.append(this.el('span','',`Save PDF uses ${this.preset.paper} ${this.preset.orientation} at actual size. ${this.host.linuxPrint?'Print uses this paper size and fits the document to the printer’s printable area. If printing a saved PDF elsewhere, select the same paper size.':'Print sends the same settings to your printer; check them if you change printers.'}`));
   }
   private requestOutput(kind:'pdf'|'print') {
     if(this.outputBusy || !this.pageCount || !this.token)return;

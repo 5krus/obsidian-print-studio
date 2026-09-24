@@ -1,5 +1,6 @@
 import {writeFile} from 'node:fs/promises';
 import type {Preset} from './settings';
+import {preparePDF} from './pdf-output';
 
 export interface OutputRequest {kind:'pdf'|'print'; html:string; title:string; preset:Preset}
 export function pdfOptions(preset:Preset) {
@@ -29,13 +30,16 @@ export interface DesktopBridge {
 export class NativePrinter {
   private windows=new Set<PrintWindow>();
   private disposed=false;
-  constructor(private desktop:DesktopBridge) {}
+  constructor(private desktop:DesktopBridge,private printPDF?:(data:Uint8Array,request:OutputRequest)=>Promise<void>,private platform:NodeJS.Platform=process.platform) {}
   async output(request:OutputRequest) {
     if(this.disposed)return;
     if(!this.desktop?.BrowserWindow || !this.desktop.dialog)throw new Error('Desktop printing is unavailable. Restart Obsidian or use Export HTML.');
+    const externalPrint=request.kind==='print' && this.platform==='linux';
+    const makePDF=request.kind==='pdf' || externalPrint;
+    if(externalPrint && !this.printPDF)throw new Error('Use Save PDF, then print the saved file with the same paper size in your PDF viewer.');
     let filePath:string|undefined;
     if(request.kind==='pdf') {
-      const result=await this.desktop.dialog.showSaveDialog({title:'Save PDF',defaultPath:`${request.title}.pdf`,filters:[{name:'PDF',extensions:['pdf']}]});
+      const result=await this.desktop.dialog.showSaveDialog({title:'Save PDF',buttonLabel:'Save',defaultPath:`${request.title}.pdf`,filters:[{name:'PDF',extensions:['pdf']}]});
       if(result.canceled || !result.filePath || this.disposed)return;
       filePath=result.filePath;
     }
@@ -50,15 +54,20 @@ export class NativePrinter {
       // physical print dialog. Closing the studio destroys outstanding windows.
       const prepare=async()=>{
         await win.loadURL(url);
-        await win.webContents.executeJavaScript('Promise.all([document.fonts.ready,...Array.from(document.images,img=>img.decode().catch(()=>{}))]).then(()=>undefined)');
-        if(request.kind==='pdf')return win.webContents.printToPDF(pdfOptions(request.preset));
+        await win.webContents.executeJavaScript('Promise.all([document.fonts.ready,...Array.from(document.images,img=>img.decode())]).then(()=>undefined)');
+        if(makePDF) {
+          const data=await win.webContents.printToPDF(pdfOptions(request.preset));
+          if(new TextDecoder().decode(data.slice(0,5))!=='%PDF-')throw new Error('The print engine did not return a valid PDF. Please try again.');
+          return preparePDF(data,request.preset);
+        }
       };
       const data=await Promise.race([prepare(),new Promise<never>((_,reject)=>{timer=window.setTimeout(()=>reject(new Error('Preparing the print document timed out. Please try again.')),60_000);})]);
       window.clearTimeout(timer);
       if(this.disposed)return;
-      if(request.kind==='pdf') {
+      if(makePDF) {
         if(!data || new TextDecoder().decode(data.slice(0,5))!=='%PDF-')throw new Error('The print engine did not return a valid PDF. Please try again.');
-        await writeFile(filePath!,data);
+        if(externalPrint)await this.printPDF!(data,request);
+        else await writeFile(filePath!,data);
       }
       else await new Promise<void>((resolve,reject)=>win.webContents.print(printOptions(request.preset),(success,reason)=>{
         if(success || /cancel/i.test(reason))resolve();else reject(new Error(reason || 'Printing failed.'));

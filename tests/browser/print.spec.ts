@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {readFile,writeFile} from 'node:fs/promises';
+import {preparePDF} from '../../src/pdf-output';
 
 test('embedded titles and properties can be hidden without leaving space or changing body content',async({page,browser},testInfo)=>{
   await page.goto('/test.html?embeds');
@@ -159,6 +160,7 @@ for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landsca
     await output.setContent(request.html);await output.evaluate(()=>document.fonts.ready);
     const direct=testInfo.outputPath('direct.pdf');
     await output.pdf({path:direct,format:request.preset.paper,landscape:orientation==='landscape',preferCSSPageSize:true,scale:1,printBackground:true,displayHeaderFooter:false,margin:{top:0,bottom:0,left:0,right:0}});
+    await writeFile(direct,await preparePDF(await readFile(direct),request.preset));
     const directInfo=execFileSync('pdfinfo',['-f','1','-l',String(pages),direct],{encoding:'utf8'});
     expect(Number(directInfo.match(/Pages:\s+(\d+)/)?.[1])).toBe(pages);
     const allSizes=[...directInfo.matchAll(/Page\s+\d+ size:\s+([\d.]+) x ([\d.]+)/g)];

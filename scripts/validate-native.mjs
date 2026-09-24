@@ -20,7 +20,7 @@ for(let attempt=0;attempt<60;attempt++) {
   } catch(error) {if(error.code!=='ENOENT')throw error;}
   await new Promise(resolve=>setTimeout(resolve,1000));
 }
-assert.equal(paths?.length,8,'Native validation did not finish; check obsidian dev:errors.');
+assert.equal(paths?.length,16,'Native validation did not finish; check obsidian dev:errors.');
 for(const path of paths) {
   const folder=dirname(path),request=JSON.parse(await readFile(join(folder,'native-request.json'),'utf8'));
   const info=execFileSync('pdfinfo',['-f','1','-l','10000',path],{encoding:'utf8'});

@@ -30,7 +30,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get update
-          sudo apt-get install -y poppler-utils zip
+          sudo apt-get install -y poppler-utils ghostscript zip
       - name: Validate preview and PDF output
         run: |
           node scripts/build-tests.mjs
