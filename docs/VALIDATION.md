@@ -1,5 +1,13 @@
 # Print Studio validation
 
+## 0.3.12 embedded figure pagination
+
+- Lint, 53 unit tests, TypeScript/build, packaging, and all 26 browser/PDF tests passed.
+- A synthetic native embed with tables, a large square figure, a caption, and trailing text reproduces the missing figure in A4 portrait before the fix. After the fix, all content and the original-resolution image survive preview and PDF export across A4/Letter and portrait/landscape.
+- Nested preview display containers are unwrapped after metadata filtering; the outer embed and all body content remain. Unit coverage checks nested embeds and both metadata visibility settings.
+- Verified the reported document in a running Obsidian instance using the production markup fix in a temporary preview. Pagination changed from four incomplete pages to five complete pages; both images and every source text character survived after whitespace and pagination-hyphen normalization. Private notes and images are not included in tests or release assets.
+- Physical printing remains a manual check; the printer and PDF output adapters are unchanged.
+
 ## 0.3.11 printer media and image compatibility
 
 - Lint, 52 unit tests, TypeScript/build, and all 22 browser/PDF tests passed.

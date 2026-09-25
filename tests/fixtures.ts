@@ -64,3 +64,21 @@ export function inlineEmbeddedNote(root:HTMLElement):HTMLElement {
   paragraph.append(span);embed.replaceWith(paragraph);
   return root;
 }
+
+// Long native note embeds used to lose a large figure and the remaining
+// body when Paged.js resumed through Obsidian's nested preview containers.
+export function embeddedFigureHtml(image:string):string {
+  return `<h3>Document start</h3><div class="ps-page-break"></div>
+<h3>Embedded section</h3>
+<div class="internal-embed markdown-embed inline-embed is-loaded">
+  <div class="markdown-embed-title">Generated figure note title</div>
+  <div class="markdown-embed-content"><div class="markdown-preview-view markdown-rendered mod-frontmatter">
+    ${Array.from({length:10},(_,i)=>`<p>BEFORE-FIGURE-${i} ${'Every part of this embedded note must survive page boundaries. '.repeat(4)}</p>${[2,6].includes(i)?'<h4>Table heading</h4><p>Table introduction.</p><table><tbody>'+Array.from({length:5},()=>'<tr><td>Category</td><td>'+ 'Table content that must survive pagination. '.repeat(3)+'</td></tr>').join('')+'</tbody></table>':''}`).join('\n')}
+    <figure><img src="${image}" alt="Embedded square diagram"><figcaption>
+      <center>FIGURE-CAPTION</center>
+    </figcaption></figure>
+    <p>AFTER-FIGURE: the remaining embedded content must survive.</p>
+  </div></div>
+</div>
+<div class="ps-page-break"></div><h3>NEXT-SECTION</h3>`;
+}

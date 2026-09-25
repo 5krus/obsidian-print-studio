@@ -20,6 +20,13 @@ export function cleanMarkup(html: string, createElement: ElementFactory, hideEmb
       embed.querySelectorAll('.markdown-embed-title,.markdown-embed-link,.inline-title,.frontmatter,.frontmatter-container,.frontmatter-section').forEach(e=>e.remove());
     }
   }
+  // Native note previews add nested display containers. Paged.js can resume at
+  // the next section instead of an overflowing figure inside these wrappers,
+  // silently dropping the rest of the embed. Keep the outer embed (and its
+  // metadata scope), but let its body blocks participate directly in pagination.
+  for(const wrapper of root.querySelectorAll('.markdown-embed .markdown-embed-content,.markdown-embed .markdown-preview-view')) {
+    wrapper.replaceWith(...wrapper.childNodes);
+  }
   return root.innerHTML;
 }
 export function pageCss(preset: Preset): string {

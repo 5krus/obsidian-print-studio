@@ -40,9 +40,23 @@ test('embedded note metadata is optional without stripping body headings, tags, 
   const cleaned=documentModule.cleanMarkup(embeddedNoteHtml,browserUI.createElement,true);
   assert.doesNotMatch(cleaned,/Generated|generated-tag|Nested generated title|nested-generated-tag|Open embedded note|Properties panel/);
   for(const text of ['Main document heading','#main-tag','Embedded body heading','#body-tag','Keep this code example','code-tag','Nested body survives','Image caption survives','End of main document'])assert.ok(cleaned.includes(text),text);
-  assert.match(cleaned,/markdown-preview-view markdown-rendered mod-frontmatter mod-ui/);
+  assert.doesNotMatch(cleaned,/markdown-preview-view|markdown-embed-content/);
   const outside='<div class="inline-title">Outside title</div><pre class="frontmatter">Outside properties</pre>';
   assert.equal(documentModule.cleanMarkup(outside,browserUI.createElement,true),outside);
+});
+
+test('native preview wrappers are unwrapped after metadata filtering without losing nested content',()=>{
+  for(const hide of [false,true]) {
+    const root=document.createElement('div');
+    root.innerHTML=documentModule.cleanMarkup(embeddedNoteHtml,browserUI.createElement,hide);
+    assert.equal(root.querySelectorAll('.markdown-embed-content,.markdown-preview-view').length,0);
+    assert.equal(root.querySelectorAll('.markdown-embed').length,2);
+    assert.equal(root.querySelector('.markdown-embed > h2')?.textContent,'Embedded body heading');
+    assert.equal(root.querySelector('.markdown-embed .markdown-embed p')?.textContent,'Nested body survives');
+    assert.equal(root.querySelectorAll('.markdown-embed-title').length,hide?0:2);
+  }
+  const outside='<div class="markdown-preview-view"><p>Outside embed</p></div>';
+  assert.equal(cleanMarkup(outside),outside);
 });
 
 test('the preset removes embedded metadata from the frame payload before pagination',()=>{
