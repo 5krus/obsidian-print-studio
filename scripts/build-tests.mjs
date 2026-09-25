@@ -4,4 +4,5 @@ await mkdir('build',{recursive:true});
 await Promise.all([copyFile('styles.css','build/styles.css'),copyFile('tests/support/theme.css','build/theme.css')]);
 const runtime=await build({entryPoints:['src/frame.ts'],bundle:true,write:false,format:'iife',platform:'browser',target:'chrome110',minify:true});
 await build({entryPoints:['tests/browser/fixture.ts'],bundle:true,format:'iife',platform:'browser',target:'chrome110',outfile:'build/test.js',define:{FRAME_RUNTIME:JSON.stringify(runtime.outputFiles[0].text)}});
+await build({entryPoints:['tests/browser/snapshot-fixture.ts'],bundle:true,format:'iife',platform:'browser',target:'chrome110',outfile:'build/snapshot-test.js'});
 await writeFile('build/test.html','<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="styles.css"></head><body class="theme-dark"><div id="studio"></div><script src="test.js"></script></body></html>');

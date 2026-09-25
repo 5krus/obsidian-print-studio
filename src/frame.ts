@@ -6,6 +6,7 @@ import {pageCss, type PrintJob} from './document';
 import {expandTemplate} from './template';
 import {paperSize} from './settings';
 import {layoutWarnings} from './layout-warnings';
+import {freezePageContent} from './page-snapshot';
 declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
@@ -69,6 +70,7 @@ async function run() {
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   await document.fonts.ready;
+  freezePageContent(all);
   // Move only into unused space after pagination, without changing page count
   // or splitting a fitting cover. Oversized sections retain normal pagination.
   for(const page of all) {

@@ -1,5 +1,14 @@
 # Print Studio validation
 
+## 0.3.13 consistent preview and output text
+
+- Lint, 53 unit tests, TypeScript/build, packaging, and all 28 browser/PDF tests passed.
+- Completed pages retain measured text line breaks before pagination-only CSS columns are disabled. This prevents a new print window's font rounding from wrapping the final lines into hidden columns. Inline markup and selectable text are retained.
+- A synthetic regression demonstrates the original off-page tail when text metrics change in a fresh window, then verifies the final amount and all paragraph text survive the fixed PDF. Coverage includes explicit/blank lines, styled text, subscript/superscript, Unicode, long links, nested lists, tables, and media.
+- All 16 native outputs (Save PDF and Linux Print across eight paper/orientation/letterhead snapshots) passed in Obsidian's Electron engine. Page dimensions, counts, table rows, paragraphs, and end markers were checked without physical printer submission.
+- Reproduced the reported paragraph loss through both native output paths. With the fix, the live preview's amount remains on its original line in both outputs. A final private-document capture retained all source text in the PDF body, accounting for generated list numbers and table-cell extraction order; Save PDF and Linux Print produced identical extracted text. Private content is excluded from tests and release assets.
+- Physical printing and Windows/macOS native dialogs remain manual checks.
+
 ## 0.3.12 embedded figure pagination
 
 - Lint, 53 unit tests, TypeScript/build, packaging, and all 26 browser/PDF tests passed.

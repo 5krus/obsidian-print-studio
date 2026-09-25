@@ -4,5 +4,5 @@ export default [
   ...obsidianmd.configs.recommended,
   {files:['src/**/*.ts'],languageOptions:{parserOptions:{projectService:true},globals:{FRAME_RUNTIME:'readonly'}},rules:{'obsidianmd/ui/sentence-case':['warn',{brands:['Print Studio','Markdown','Obsidian','HTML','PDF']}] }},
   // The sandboxed print frame has no Obsidian globals.
-  {files:['src/frame.ts'],rules:{'obsidianmd/prefer-create-el':'off'}},
+  {files:['src/frame.ts','src/page-snapshot.ts'],rules:{'obsidianmd/prefer-create-el':'off'}},
 ];
