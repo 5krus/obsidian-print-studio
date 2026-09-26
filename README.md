@@ -44,6 +44,8 @@ Use **Refresh note** after editing the note, changing its theme or updating a sn
 
 ## A few useful details
 
-Print Studio works locally, with no accounts, telemetry or cloud service. Complex embeds and plugin layouts may look different; check the preview before exporting. [Help with layout and printing →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md)
+Print Studio works locally, with no accounts, telemetry or cloud service. Presets stay in your vault. External file access is limited to files you choose to import or export and temporary print files. Print Studio makes no network requests; Obsidian or other plugins may load resources while rendering your note.
+
+Complex embeds and plugin layouts may look different; check the preview before exporting. [Help with layout and printing →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md)
 
 [Report a problem](https://github.com/5krus/obsidian-print-studio/issues) · [Developer docs](https://github.com/5krus/obsidian-print-studio/blob/main/docs/DEVELOPMENT.md) · [MIT license](https://github.com/5krus/obsidian-print-studio/blob/main/LICENSE)
