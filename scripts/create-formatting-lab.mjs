@@ -10,7 +10,7 @@ await mkdir(plugin,{recursive:true});await mkdir(join(config,'snippets'),{recurs
 for(const name of ['main.js','manifest.json','styles.css','LICENSE','THIRD_PARTY_NOTICES.md'])await copyFile(name,join(plugin,name));
 await copyFile('tests/native/fixtures/formatting-study.md',join(lab,'Formatting study.md'));
 await copyFile('tests/native/fixtures/study-styles.css',join(config,'snippets/study-styles.css'));
-await copyFile('docs/FORMATTING.md',join(lab,'Testing guide.md'));
+await copyFile('docs/DEVELOPMENT.md',join(lab,'Testing guide.md'));
 await writeFile(join(config,'community-plugins.json'),JSON.stringify(['print-studio','fast-text-color']));
 await writeFile(join(config,'appearance.json'),JSON.stringify({theme:'obsidian',enabledCssSnippets:['study-styles']}));
 const settingsFile=resolve('build/lab-settings.cjs');await build({entryPoints:['src/settings.ts'],bundle:true,platform:'node',format:'cjs',outfile:settingsFile});

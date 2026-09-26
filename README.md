@@ -1,85 +1,49 @@
-# Print Studio for Obsidian
+# Print Studio
 
-Turn Markdown notes into branded, paginated documents with logos, headers, footers, page borders, and reusable presets. Preview your pages, print or save a PDF, or export self-contained HTML.
+Turn your Obsidian notes into polished PDFs and printed pages. Add a letterhead, keep your study highlights, and reuse your favourite layouts.
 
-**Desktop Obsidian 1.13.0+ · Free · MIT licensed**
+**[Open in Obsidian](https://obsidian.md/plugins?id=print-studio)** · [Quick guide](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md) · [What’s new](https://github.com/5krus/obsidian-print-studio/releases/latest)
 
-![Print Studio in Obsidian](docs/print-studio-dark.png)
+Free · Desktop Obsidian 1.13.0+ · No account required
 
-## Install
+![Print Studio in Obsidian: page settings on the left and a paginated study note on the right, with Save PDF in the header.](https://raw.githubusercontent.com/5krus/obsidian-print-studio/main/docs/print-studio-dark.png)
 
-In Obsidian, open **Settings → Community plugins → Browse**, search for **Print Studio**, then select **Install** and **Enable**. Community plugins require Restricted mode to be off. Updates are available from the same settings page.
+## Start in Obsidian
 
-## Use
+1. Open **Settings → Community plugins → Browse**, search for **Print Studio**, then **Install** and **Enable**.
+2. Open a note and click the **printer icon** in Obsidian’s ribbon. You can also right-click a note → **Open in Print Studio**.
+3. Choose a preset, check the preview, then **Save PDF** or **Print**.
 
-Open a note and run **Print Studio: Preview & print current note**, click the printer ribbon icon, or right-click a note and choose **Open in Print Studio**.
+For updates, use **Settings → Community plugins → Check for updates**.
 
-- **Design:** choose A4 or Letter, portrait or landscape, margins, typography, colors, borders, and a logo. Optionally use a larger, separate first-page letterhead.
-- **Presets:** changes save automatically in your vault. Open the gear beside the preset selector to duplicate, import, export, restore, or remove presets. Undo/redo up to 20 changes per session.
-- **Preview:** navigate by page and zoom from 50–200% or fit to width. Layout changes retain your page and zoom. Layout warnings link to possible clipping or oversized table rows.
-- **Refresh note:** pick up changes to the note, properties, or attachments. Layout edits otherwise reuse the rendered content.
+## Make it yours
 
-Use **Insert placeholder…** in any header/footer field for company, note title, date, vault, page numbers, or text/number/boolean note properties. For example:
+Choose A4 or Letter, adjust margins and type, or add a logo, page border, headers and footers. Your changes save automatically to the selected preset in this vault.
 
-```text
-Prepared for {{meta:client}}
-{{page}} / {{pages}}
-```
+Use the **gear beside the preset selector** to duplicate, import, export, remove, or restore presets. **Undo change** and **Redo change** stay close at hand.
 
-Enable **Uppercase left**, **Uppercase center**, or **Uppercase right** below a header/footer field to capitalize its printed text, including resolved placeholders (for example, `Example` becomes `EXAMPLE`). Each field has its own switch, including the separate first-page header. Your note and template text keep their original capitalization; the setting applies to preview, PDF, and HTML output and saves with the preset.
+![The preset gear menu, including Duplicate preset, Import presets, export options, Restore built-in presets and Remove preset.](https://raw.githubusercontent.com/5krus/obsidian-print-studio/main/docs/images/presets.png)
 
-Under **Content**, enable **Hide embedded note titles and properties** to omit the generated titles and frontmatter (including tags) that can appear when printing embedded notes. Their body content, headings, and inline tags stay visible. The removed elements take up no space in preview, PDF, or HTML output. This option saves with the preset and is off by default.
+## Keep your colours and highlights
 
-Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `====` on its own line, with blank lines around it, outside a code fence. The marker is hidden in the note editor until the cursor or selection reaches its line. Existing `<!-- pagebreak -->` markers also work. Frontmatter is omitted from the printed body.
+Choose **Content → Note appearance → Preserve text formatting** to keep supported styling from your note, CSS snippets and plugins such as Fast Text Color. **Studio styles** remains the default. **Reading appearance (experimental)** also keeps the note’s base font and background.
 
-For a bottom-aligned cover, put `&&&&` on its own line before the title and other cover text, then `====` after it. The space above that text expands to fill the printed page. Without a following break, alignment continues to the end of the note. The spacer is hidden in the editor until its line is active and adds no space to the ordinary note. Content too long for one page flows normally, with its last page aligned to the bottom.
+![Preserved red bold text, blue italics and a yellow highlight in the printed note.](https://raw.githubusercontent.com/5krus/obsidian-print-studio/main/docs/images/appearance-text.png)
 
-## Note appearance and custom CSS
+[See the appearance options and custom CSS examples →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/FORMATTING.md)
 
-Under **Content → Note appearance**, choose **Studio styles** for the existing preset-driven look, **Preserve text formatting** to retain text colors, highlights, sizes, bold and italics on white paper, or **Reading appearance (experimental)** to also retain the note's base font and background. This includes supported styles from CSS snippets, inline formatting, and plugins such as Fast Text Color. Existing presets keep Studio styles by default.
+## Save, print or share
 
-For print-specific adjustments, open **Custom CSS**, enter rules, and enable the switch. Rules apply to note content and save with the preset. For example, `strong { color: #b42318; }` changes bold text without changing the note. Use **Refresh note** after changing a theme or snippet.
+| Action | What you get |
+| --- | --- |
+| **Save PDF** | A PDF using your selected paper size and orientation. |
+| **Print** | Send the pages to a printer. |
+| **Export HTML** | A self-contained document you can open in a browser. |
 
-The gear beside the preset selector includes **Restore built-in presets**, which resets Studio letterhead, Editorial and Essential and recreates deleted originals. Custom and imported presets stay intact. Restoration asks for confirmation and supports Undo while Print Studio remains open.
+Use **Refresh note** after editing the note, changing its theme or updating a snippet. Preview zoom does not change the output size.
 
-Reading appearance preserves supported text styles, not every theme layout or plugin widget. The CSS field accepts text, spacing and border rules; page rules, positioning, CSS variables and external resources are unsupported. See the [formatting guide](docs/FORMATTING.md) for examples, limitations and testing instructions.
+## A few useful details
 
-## Print and export
+Print Studio works locally, with no accounts, telemetry or cloud service. Complex embeds and plugin layouts may look different; check the preview before exporting. [Help with layout and printing →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md)
 
-Choose **Save PDF** once the preview is ready. Select a filename and Print Studio saves the finished pages using your selected **A4 or Letter** size and **portrait or landscape** orientation, at actual size. Preview zoom and the system printer’s default paper size do not affect the PDF.
-
-On **Linux**, choose **Print**, select your system printer and copy count, then confirm. Print Studio sends the selected A4/Letter size and orientation directly to the print queue, fits pages to the printable area, and prints single-sided. This avoids both the Obsidian/Electron native-dialog crash and a PDF viewer overriding your paper size. A configured CUPS printer and the `lp`/`lpstat` commands are required.
-
-Saved PDFs use exact standard page dimensions and include paper-selection hints for viewers that support them. The export also corrects a Chromium colour-profile incompatibility that can make images disappear in printer conversion, while retaining text, transparency, and original image resolution. When printing a saved PDF from another app, choose the matching paper size and fit to printable area; that app can override the PDF’s hints.
-
-On **Windows and macOS**, choose **Print** for a physical printer. Print Studio sends the selected paper size and orientation, 100% scale, no added margins, and background graphics to the system dialog. Check the settings if you switch printers; printer drivers can override them.
-
-**Export HTML** downloads the finished pages with embedded styles and images, without JavaScript. Open it in a desktop Chromium-based browser to print if the system dialog is unavailable in Obsidian. Preview zoom does not affect output size.
-
-## Compatibility and privacy
-
-Standard Markdown and vault image attachments are supported. Remote, missing, or oversized attachments (over 10 MB) become labeled placeholders. Embedded notes/PDFs, dynamic plugin blocks, and complex MathJax/Mermaid content may not render faithfully. Check the preview; long rows or header/footer text may need simpler formatting or larger margins.
-
-Print Studio reads the current note and resolves referenced images through targeted vault lookups. It does not enumerate the vault. Presets and logos live in the plugin’s `data.json`, which may be synchronized by your vault setup. Outside-vault files are limited to logo/preset files you select, exports you save, and temporary PDFs removed after Linux print submission. Confirmed print jobs go to the system printer you select.
-
-No accounts, payments, telemetry, or cloud services are required. Print Studio makes no network requests of its own. Obsidian or enabled Markdown plugins may load remote resources during initial note rendering; the isolated print preview blocks network access.
-
-Physical printing and Windows/macOS print dialogs remain unverified. See the [validation report](docs/VALIDATION.md) for version-specific test coverage.
-
-## Development
-
-Requires Node.js 22+ and npm.
-
-```sh
-npm ci
-npm run check     # lint, unit tests, and build
-npm run package   # local installable folder and ZIP
-```
-
-`npm run test:browser` runs the browser/PDF suite and requires Chromium, Poppler, and Ghostscript. `node scripts/validate-native.mjs` then verifies both Save PDF and Linux Print for all eight paper/orientation/letterhead snapshots through the real Electron PDF engine in a running Obsidian instance with its CLI enabled. It uses synthetic content, writes only to `test-results/`, and does not submit physical print jobs. CI runs validation and packaging; the separate release workflow builds attested installer assets. See the [release and provenance guide](docs/COMMUNITY_SUBMISSION.md).
-
-## Support and license
-
-Report bugs or request features in [GitHub Issues](https://github.com/5krus/obsidian-print-studio/issues). Include your Obsidian version, operating system, and a minimal example with sensitive information removed.
-
-[MIT license](LICENSE) · [Third-party licenses and attribution](THIRD_PARTY_NOTICES.md)
+[Report a problem](https://github.com/5krus/obsidian-print-studio/issues) · [Developer docs](https://github.com/5krus/obsidian-print-studio/blob/main/docs/DEVELOPMENT.md) · [MIT license](https://github.com/5krus/obsidian-print-studio/blob/main/LICENSE)
