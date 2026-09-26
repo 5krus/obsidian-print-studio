@@ -15,7 +15,7 @@ In Obsidian, open **Settings → Community plugins → Browse**, search for **Pr
 Open a note and run **Print Studio: Preview & print current note**, click the printer ribbon icon, or right-click a note and choose **Open in Print Studio**.
 
 - **Design:** choose A4 or Letter, portrait or landscape, margins, typography, colors, borders, and a logo. Optionally use a larger, separate first-page letterhead.
-- **Presets:** changes save automatically in your vault. Duplicate, import, or export presets—including logos—and undo/redo up to 20 changes per session.
+- **Presets:** changes save automatically in your vault. Open the gear beside the preset selector to duplicate, import, export, restore, or remove presets. Undo/redo up to 20 changes per session.
 - **Preview:** navigate by page and zoom from 50–200% or fit to width. Layout changes retain your page and zoom. Layout warnings link to possible clipping or oversized table rows.
 - **Refresh note:** pick up changes to the note, properties, or attachments. Layout edits otherwise reuse the rendered content.
 
@@ -33,6 +33,16 @@ Under **Content**, enable **Hide embedded note titles and properties** to omit t
 Enable **Page break before headings** to start each subsequent top-level heading on a new page. For a manual break, put `====` on its own line, with blank lines around it, outside a code fence. The marker is hidden in the note editor until the cursor or selection reaches its line. Existing `<!-- pagebreak -->` markers also work. Frontmatter is omitted from the printed body.
 
 For a bottom-aligned cover, put `&&&&` on its own line before the title and other cover text, then `====` after it. The space above that text expands to fill the printed page. Without a following break, alignment continues to the end of the note. The spacer is hidden in the editor until its line is active and adds no space to the ordinary note. Content too long for one page flows normally, with its last page aligned to the bottom.
+
+## Note appearance and custom CSS
+
+Under **Content → Note appearance**, choose **Studio styles** for the existing preset-driven look, **Preserve text formatting** to retain text colors, highlights, sizes, bold and italics on white paper, or **Reading appearance (experimental)** to also retain the note's base font and background. This includes supported styles from CSS snippets, inline formatting, and plugins such as Fast Text Color. Existing presets keep Studio styles by default.
+
+For print-specific adjustments, open **Custom CSS**, enter rules, and enable the switch. Rules apply to note content and save with the preset. For example, `strong { color: #b42318; }` changes bold text without changing the note. Use **Refresh note** after changing a theme or snippet.
+
+The gear beside the preset selector includes **Restore built-in presets**, which resets Studio letterhead, Editorial and Essential and recreates deleted originals. Custom and imported presets stay intact. Restoration asks for confirmation and supports Undo while Print Studio remains open.
+
+Reading appearance preserves supported text styles, not every theme layout or plugin widget. The CSS field accepts text, spacing and border rules; page rules, positioning, CSS variables and external resources are unsupported. See the [formatting guide](docs/FORMATTING.md) for examples, limitations and testing instructions.
 
 ## Print and export
 

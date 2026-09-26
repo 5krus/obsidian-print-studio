@@ -14,6 +14,14 @@ export interface ButtonOptions {
 
 export type ElementFactory = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => HTMLElementTagNameMap[K];
 
+export interface MenuAction {
+  label: string;
+  icon: string;
+  action: () => void;
+  disabled?: boolean;
+  separatorBefore?: boolean;
+}
+
 export interface StudioUI {
   createElement: ElementFactory;
   setting(parent: HTMLElement, name: string, description?: string): SettingRow;
@@ -22,6 +30,8 @@ export interface StudioUI {
   toggle(parent: HTMLElement, value: boolean, change: (value: boolean) => void): HTMLElement;
   color(parent: HTMLElement, value: string, change: (value: string) => void): HTMLInputElement;
   button(parent: HTMLElement, label: string, action: () => void, options?: ButtonOptions): HTMLButtonElement;
+  menu(anchor: HTMLButtonElement, actions: MenuAction[]): () => void;
   icon(parent: HTMLElement, name: string): void;
   confirmRemoval(name: string): Promise<boolean>;
+  confirmRestoreBuiltIns(): Promise<boolean>;
 }

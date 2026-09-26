@@ -67,3 +67,19 @@ test('the preset removes embedded metadata from the frame payload before paginat
   assert.doesNotMatch(job.html,/Generated embed title|generated-tag/);
   assert.match(job.html,/Embedded body heading/);
 });
+
+test('preservation carries only text styles and CSS cannot break out of the frame payload',()=>{
+  const preset=defaults().presets[0];preset.formatting='text';preset.customCssEnabled=true;
+  preset.customCss='strong{font-family:"</script><script>bad()</script>";color:#123456}';
+  const original='<p style="color: rgb(230, 230, 230);font-size:16px;position:fixed;background-image:url(https://example.com);"><strong style="color:green;font-weight:800">Styled</strong></p>';
+  const output=frameDocument({html:original,formatting:{html:original,rootStyle:'color:rgb(230,230,230);font-size:16px;background-color:rgb(30,30,30)'},preset,context:{title:'Formatting',vault:'Test',date:'Today',metadata:{}}},'t');
+  const payload=JSON.parse(output.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
+  assert.doesNotMatch(payload.html,/style=|position|url\(/);assert.match(payload.html,/data-ps-format/);
+  assert.match(payload.contentCss,/color: rgb\(38, 39, 39\)/);assert.match(payload.contentCss,/font-weight: 800/);
+  assert.doesNotMatch(payload.contentCss,/position|background-image/);
+  assert.equal((output.match(/<script>/g)??[]).length,2);
+  preset.formatting='studio';preset.customCssEnabled=false;
+  const classic=frameDocument({html:original,preset,context:{title:'Test',vault:'Test',date:'Today',metadata:{}}},'t');
+  const classicJob=JSON.parse(classic.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
+  assert.doesNotMatch(classicJob.html,/style=|data-ps-format/);assert.equal(classicJob.contentCss.trim(),'');
+});

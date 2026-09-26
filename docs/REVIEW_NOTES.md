@@ -6,7 +6,13 @@
 
 ## Isolated print runtime
 
-`src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. Standard DOM creation is intentional because Obsidian's globals are unavailable. Giving this frame access to the parent app to satisfy a DOM-helper recommendation would undermine its isolation. This is the only production source file exempted from the local DOM-helper lint rule; the community scanner may still report these calls.
+`src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. Standard DOM creation is intentional because Obsidian's globals are unavailable. Giving this frame access to the parent app to satisfy a DOM-helper recommendation would undermine its isolation. This file and `src/page-snapshot.ts`, which freezes the finished export DOM, are exempted from the local DOM-helper lint rule; the community scanner may still report these calls.
+
+## Captured formatting and custom CSS
+
+`src/note-formatting.ts` captures computed text styles from an offscreen Obsidian render into a detached clone; it does not rewrite the source note. Its style assignments are export data, not styling for the plugin interface. Captured inline declarations pass a finite text-property allowlist before entering the print frame.
+
+`src/content-css.ts` parses user CSS with CSS Tree, scopes each selector to note content, and allows only text, spacing and border declarations. At-rules, resource URLs, variables, generated content and layout/positioning properties are rejected. Unsupported CSS blocks export until corrected or disabled. The frame and exported document retain their network-blocking CSP, and style text is escaped during HTML serialization.
 
 ## Desktop printing
 

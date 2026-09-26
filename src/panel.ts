@@ -1,17 +1,19 @@
 import type {OutputRequest} from './native-print';
 import DOMPurify from 'dompurify';
 import {frameDocument} from './document';
-import {normalizePreset, type Settings, type Preset} from './settings';
+import {MAX_CUSTOM_CSS, normalizePreset, type Settings, type Preset} from './settings';
 import {frameMessage, type LayoutWarning} from './messages';
 import {placeholderOptions, type DocumentContext} from './template';
 import type {SettingRow, StudioUI} from './ui';
-import {exportPresets, importPresets, MAX_PRESET_FILE_BYTES} from './presets';
+import {exportPresets, importPresets, restoreBuiltInPresets, MAX_PRESET_FILE_BYTES} from './presets';
 import {PresetHistory} from './history';
+import type {NoteFormatting} from './note-formatting';
+import {compileContentCss} from './content-css';
 let fieldId = 0;
 export interface StudioHost {
   settings:Settings;
   ui:StudioUI;
-  source():Promise<{html:string;context:DocumentContext;warnings:string[]}>;
+  source():Promise<{html:string;formatting?:NoteFormatting;context:DocumentContext;warnings:string[]}>;
   save(settings:Settings):Promise<void>;
   notify(message:string):void;
   linuxPrint?:boolean;
@@ -45,6 +47,8 @@ export class StudioPanel {
   private colorScheme() {return document.body.classList.contains('theme-dark') ? 'dark' : 'light';}
   private syncTheme = () => {const scheme=this.colorScheme();this.frame.style.colorScheme=scheme;this.frame.contentWindow?.postMessage({type:'theme',scheme,token:this.token},'*');};
   private presetSelect?:HTMLSelectElement;
+  private presetSettings?:HTMLButtonElement;
+  private closePresetMenu?:()=>void;
   private expanded = new Set(['Identity']);
   private revision=0;
   private token='';
@@ -215,7 +219,7 @@ export class StudioPanel {
       if(this.disposed)return;
       const settings=importPresets(text,this.settings);
       const count=settings.presets.length-this.settings.presets.length;
-      this.settings=settings;this.renderControls();this.change();
+      this.settings=settings;this.renderControls();this.change();this.presetSettings?.focus();
       this.host.notify(`Imported ${count} ${count===1?'preset':'presets'}.`);
     }catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
   }
@@ -296,7 +300,7 @@ export class StudioPanel {
     this.describe(input, row);
     input.onchange = () => {this.preset[key]=Number(input.value); Object.assign(this.preset,normalizePreset(this.preset)); input.value=String(this.preset[key]); this.change();};
   }
-  private toggle(parent:HTMLElement, title:string, key:'headerRule'|'footerRule'|'headingBreaks'|'differentFirstPage'|'firstPageHeaderRule'|'logoFirstPageOnly'|'hideEmbeddedNoteMetadata', hint?:string) {
+  private toggle(parent:HTMLElement, title:string, key:'headerRule'|'footerRule'|'headingBreaks'|'differentFirstPage'|'firstPageHeaderRule'|'logoFirstPageOnly'|'hideEmbeddedNoteMetadata'|'customCssEnabled', hint?:string) {
     const row = this.row(parent, title, hint);
     row.element.classList.add('mod-toggle');
     const toggle = this.host.ui.toggle(row.control, this.preset[key], value => {
@@ -308,6 +312,7 @@ export class StudioPanel {
     this.describe(toggle, row);
   }
   private renderControls() {
+    this.closePresetMenu?.();
     const sections = this.controls.querySelectorAll<HTMLDetailsElement>('details');
     if(sections.length) this.expanded = new Set([...sections].filter(s=>s.open).map(s=>s.dataset.section!));
     const scroll = this.controls.parentElement!.scrollTop;
@@ -318,24 +323,27 @@ export class StudioPanel {
     this.presetSelect = this.host.ui.dropdown(presetRow.control, this.settings.activeId, Object.fromEntries(this.settings.presets.map(p=>[p.id,p.name])));
     this.describe(this.presetSelect, presetRow);
     this.presetSelect.onchange = () => {this.settings.activeId=this.presetSelect!.value; this.renderControls(); this.change();};
-    this.host.ui.button(presetRow.control, 'Duplicate preset', () => {
-      if(this.settings.presets.length>=30){this.host.notify('You can keep up to 30 presets.'); return;}
-      const p = structuredClone(this.preset);
-      p.id = crypto.randomUUID(); p.name = `${p.name} copy`;
-      this.settings.presets.push(p); this.settings.activeId=p.id;
-      this.renderControls(); this.change();
-    }, {icon:'copy'});
-    const remove = this.host.ui.button(presetRow.control, 'Remove preset', () => void this.removePreset(), {icon:'trash-2'});
-    remove.disabled = this.settings.presets.length<2;
-    const transfers=this.el('div','ps-preset-transfers');
     const importInput=this.el('input');importInput.type='file';importInput.accept='.json,application/json';importInput.hidden=true;
     importInput.onchange=()=>{const file=importInput.files?.[0];if(file)void this.importPresetFile(file);importInput.value='';};
-    transfers.append(importInput);
-    this.host.ui.button(transfers,'Import presets',()=>importInput.click());
-    const exportSelect=this.host.ui.dropdown(transfers,'',{'':'Export…',current:'Current preset',all:'All presets'});
-    exportSelect.setAttribute('aria-label','Export presets');
-    exportSelect.onchange=()=>{if(exportSelect.value)this.exportPresetFile(exportSelect.value==='all');exportSelect.value='';};
-    presetBox.append(transfers);
+    presetBox.append(importInput);
+    const settings=this.host.ui.button(presetRow.control,'Preset settings',()=>{
+      this.closePresetMenu?.();
+      this.closePresetMenu=this.host.ui.menu(settings,[
+        {label:'Duplicate preset',icon:'copy',disabled:this.settings.presets.length>=30,action:()=>{
+          const p=structuredClone(this.preset);
+          p.id=crypto.randomUUID();p.name=`${p.name} copy`;
+          this.settings.presets.push(p);this.settings.activeId=p.id;
+          this.renderControls();this.change();this.presetSettings?.focus();
+        }},
+        {label:'Import presets',icon:'import',separatorBefore:true,action:()=>importInput.click()},
+        {label:'Export current preset',icon:'download',action:()=>this.exportPresetFile(false)},
+        {label:'Export all presets',icon:'download',action:()=>this.exportPresetFile(true)},
+        {label:'Restore built-in presets',icon:'rotate-ccw',separatorBefore:true,action:()=>void this.restoreBuiltIns()},
+        {label:'Remove preset',icon:'trash-2',disabled:this.settings.presets.length<2,action:()=>void this.removePreset()},
+      ]);
+    },{icon:'settings'});
+    settings.setAttribute('aria-haspopup','menu');settings.setAttribute('aria-expanded','false');
+    this.presetSettings=settings;
     const history=this.el('div','ps-history');
     this.undoButton=this.host.ui.button(history,'Undo change',()=>this.restore(),{tooltip:'Undo the last preset change (up to 20 steps in this session)'});
     this.redoButton=this.host.ui.button(history,'Redo change',()=>this.restore(true));
@@ -372,6 +380,19 @@ export class StudioPanel {
 
     const content = this.section('Content');
     this.toggle(content,'Hide embedded note titles and properties','hideEmbeddedNoteMetadata','Remove generated titles and frontmatter (including tags) from embedded notes. Headings and inline tags in their content stay visible.');
+    this.select(content,'Note appearance',this.preset.formatting,{studio:'Studio styles',text:'Preserve text formatting',reading:'Reading appearance (experimental)'},v=>this.preset.formatting=v as Preset['formatting']);
+    content.append(this.el('p','ps-tip','Preserve text formatting keeps text accents on white paper. Reading appearance also keeps the current note background and base font. Font size and line spacing scale the captured typography. Use Refresh note after changing a theme or snippet.'));
+    content.append(this.el('p','ps-tip','These modes preserve text styles, not the full reading-view layout. Check pale accent colors on white paper. Reading appearance uses the note’s foreground for headers, footers and borders.'));
+
+    const css=this.section('Custom CSS');
+    this.toggle(css,'Enable custom CSS','customCssEnabled','Apply these rules to note content in this preset, after the selected appearance.');
+    const cssRow=this.row(css,'Print CSS','Use text, spacing and border properties. Selectors target the note body; .ps-content targets its root. Use literal colors and installed fonts. @ rules, CSS variables and generated content are unsupported.',true);
+    const cssInput=this.host.ui.text(cssRow.control,this.preset.customCss,true) as HTMLTextAreaElement;
+    this.describe(cssInput,cssRow);cssInput.maxLength=MAX_CUSTOM_CSS;cssInput.rows=9;cssInput.spellcheck=false;cssInput.classList.add('ps-css-input');
+    cssInput.placeholder='strong { color: #b42318; }\nem { color: #175cd3; }\nmark { background-color: #fef08a; }';
+    const cssFeedback=this.el('p','ps-tip');cssFeedback.setAttribute('aria-live','polite');css.append(cssFeedback);
+    const validateCss=()=>{try{compileContentCss(cssInput.value);cssFeedback.textContent='';cssInput.removeAttribute('aria-invalid');}catch(error){cssFeedback.textContent=error instanceof Error?error.message:String(error);cssInput.setAttribute('aria-invalid','true');}};
+    validateCss();cssInput.oninput=()=>{this.preset.customCss=cssInput.value;validateCss();this.change(cssInput);};
 
     const type = this.section('Typography');
     this.select(type, 'Font', this.preset.font, {sans:'Sans serif',serif:'Serif'}, v=>this.preset.font=v as Preset['font']);
@@ -410,7 +431,12 @@ export class StudioPanel {
     if(this.settings.presets.length<2 || !await this.host.ui.confirmRemoval(name) || this.disposed || this.settings.presets.length<2) return;
     this.settings.presets=this.settings.presets.filter(p=>p.id!==id);
     if(this.settings.activeId===id) this.settings.activeId=this.settings.presets[0].id;
-    this.renderControls(); this.change();
+    this.renderControls(); this.change();this.presetSettings?.focus();
+  }
+  private async restoreBuiltIns() {
+    if(!await this.host.ui.confirmRestoreBuiltIns() || this.disposed)return;
+    try {this.settings=restoreBuiltInPresets(this.settings);this.renderControls();this.change();this.presetSettings?.focus();}
+    catch(error){this.host.notify(error instanceof Error?error.message:String(error));}
   }
   private async loadLogo(file:File) {
     const id=this.preset.id;
@@ -428,6 +454,10 @@ export class StudioPanel {
   async render(refresh=false) {
     window.clearTimeout(this.timer);window.clearTimeout(this.timeout);const revision=++this.revision;this.token=crypto.randomUUID();this.disablePreview();this.status.textContent='Preparing pages…';
     const preset=normalizePreset(this.preset);
+    if(preset.customCssEnabled) {
+      try {compileContentCss(preset.customCss);}
+      catch {this.status.textContent='Fix custom CSS to update the preview';return;}
+    }
     try {
       if(refresh || !this.sourcePromise) {
         const pending=Promise.resolve().then(()=>this.host.source());this.sourcePromise=pending;
@@ -436,9 +466,9 @@ export class StudioPanel {
       const source=await this.sourcePromise;if(this.disposed || revision!==this.revision)return;
       this.title=source.context.title;this.noteName.textContent=this.title;this.noteName.title=this.title;
       this.metadata=source.context.metadata;this.updatePlaceholders();this.sourceWarnings=source.warnings;this.renderNotes();
-      this.frame.srcdoc=frameDocument({html:source.html,preset,context:source.context},this.token,this.host.ui.createElement,this.colorScheme());
+      this.frame.srcdoc=frameDocument({html:source.html,formatting:source.formatting,preset,context:source.context},this.token,this.host.ui.createElement,this.colorScheme());
       this.timeout=window.setTimeout(()=>{if(!this.disposed && revision===this.revision)this.status.textContent='This note is taking longer to paginate. Try refreshing the note.';},30000);
     }catch(error){if(revision!==this.revision || this.disposed)return;this.status.textContent='Could not render this note';this.host.notify(error instanceof Error?error.message:String(error));}
   }
-  dispose(){this.disposed=true;window.clearTimeout(this.outputTimer);this.pendingOutput=undefined;this.themeObserver.disconnect();++this.revision;window.clearTimeout(this.timer);window.clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
+  dispose(){this.disposed=true;this.closePresetMenu?.();window.clearTimeout(this.outputTimer);this.pendingOutput=undefined;this.themeObserver.disconnect();++this.revision;window.clearTimeout(this.timer);window.clearTimeout(this.timeout);window.removeEventListener('message',this.onMessage);this.frame.remove();this.root.replaceChildren();}
 }

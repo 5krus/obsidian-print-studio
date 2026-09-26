@@ -1,6 +1,6 @@
 # Third-party notices
 
-The plugin bundles Paged.js, DOMPurify, PDF-Lib, and their applicable runtime dependencies.
+The plugin bundles Paged.js, DOMPurify, PDF-Lib, CSS Tree, and their applicable runtime dependencies.
 
 ## @babel/polyfill 7.12.1
 

@@ -10,6 +10,7 @@ import {prepareMarkdown} from './template';
 import DOMPurify from 'dompurify';
 import {resolveVaultImage} from './attachments';
 import {serializeRenderedNote} from './rendered-note';
+import {captureNoteFormatting, noteCssClasses} from './note-formatting';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
   private studios=new Set<PrintModal>();
@@ -52,16 +53,22 @@ class PrintModal extends Modal {
   private renderComponent?:Component;
   private isClosed=false;
   constructor(private plugin:PrintStudioPlugin,private file:TFile,private closed:()=>void){super(plugin.app);}
-  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'ps-render-source markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),output:request=>this.printer.output(request),linuxPrint:process.platform==='linux',settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e instanceof Error?e:new Error(String(e)));}});})});}
+  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'markdown-reading-view'}).createDiv({cls:'ps-render-source markdown-preview-view markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),output:request=>this.printer.output(request),linuxPrint:process.platform==='linux',settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e instanceof Error?e:new Error(String(e)));}});})});}
   private async renderNote(){
     if(this.isClosed)throw new Error('Print preview was closed.');
     const view=this.app.workspace.getActiveViewOfType(MarkdownView);
     const markdown=view?.file?.path===this.file.path ? view.editor.getValue() : await this.app.vault.read(this.file);
     const root=this.renderRoot!;root.empty();
+    const metadata=this.app.metadataCache.getFileCache(this.file)?.frontmatter ?? {};
+    root.className='ps-render-source markdown-preview-view markdown-rendered';
+    root.classList.add(...noteCssClasses(metadata.cssclasses));
     if(this.renderComponent)this.component.removeChild(this.renderComponent);
     this.renderComponent=this.component.addChild(new Component());
-    await MarkdownRenderer.render(this.app,prepareMarkdown(markdown),root,this.file.path,this.renderComponent);
+    // Postprocessors (including Fast Text Color) need frontmatter to choose
+    // note-specific styles. Remove its generated display only after rendering.
+    await MarkdownRenderer.render(this.app,prepareMarkdown(markdown,true),root,this.file.path,this.renderComponent);
     if(this.isClosed)throw new Error('Print preview was closed.');
+    root.querySelectorAll(':scope > .frontmatter,:scope > .frontmatter-container').forEach(element=>element.remove());
     const warnings:string[]=[];
     const noteResource=this.app.vault.getResourcePath(this.file);
     const lookup={byPath:(path:string)=>this.app.vault.getFileByPath(path),byLink:(link:string)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),this.file.path)};
@@ -79,9 +86,8 @@ class PrintModal extends Modal {
     for(const checkbox of root.querySelectorAll<HTMLInputElement>('input[type=checkbox]')){const mark=root.createSpan();mark.className='ps-check';mark.textContent=checkbox.checked?'☑\uFE0E':'☐';checkbox.replaceWith(mark);}
     if(missing)warnings.push(`${missing} remote, missing, or oversized image(s) replaced with placeholders. Use vault attachments for self-contained printing.`);
     if(root.querySelector('.internal-embed:not(.image-embed),.block-language-dataview,.block-language-dataviewjs'))warnings.push('Embedded notes and dynamic plugin blocks may need checking in the preview.');
-    const metadata=this.app.metadataCache.getFileCache(this.file)?.frontmatter ?? {};
     const title=typeof metadata.title==='string'?metadata.title:this.file.basename;
-    return {html:serializeRenderedNote(root,(tag)=>createEl(tag)),context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
+    return {html:serializeRenderedNote(root,(tag)=>createEl(tag)),formatting:captureNoteFormatting(root,(tag)=>createEl(tag)),context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
   }
   onClose(){this.isClosed=true;this.printDialog?.close();this.printer.dispose();this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
 }

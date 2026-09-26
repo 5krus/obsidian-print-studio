@@ -1,5 +1,22 @@
 # Print Studio validation
 
+## 0.4.0 note appearance, custom CSS and preset management
+
+Usage, limitations and hands-on checks are in [the formatting guide](FORMATTING.md).
+
+- Lint, TypeScript/build, packaging, and all **59 unit tests** pass. Coverage includes legacy preset imports, appearance/CSS persistence, reset identities and capacity, preservation allowlists, malformed CSS, frontmatter preparation, and export payload escaping.
+- The complete **37-test browser/PDF suite** passes on the release source. This includes preserved text and reading appearance, custom CSS, inheritance and specificity, safe HTML serialization, preset management and keyboard behavior, plus the existing embedded-figure, page-break, cover, image-conversion, and eight paper/orientation/letterhead regressions.
+- The actual Obsidian preset menu was visually checked and exercised for keyboard navigation, Escape/outside dismissal, focus return, duplicate/undo, and cancellation of remove/restore dialogs. The close button was checked at 1200px and 600px viewport widths: it aligns with the header within one CSS pixel, and click-to-close works. The hidden native title no longer leaves a scrolling offset above the studio header.
+- **12 native formatting PDFs** passed in Obsidian **1.13.7** with the actual **Fast Text Color 1.1.12** plugin: Studio/text/reading/custom appearances in light mode, plus text/reading appearances in dark mode, each through Save PDF and the Linux Print adapter. All 24 row markers, special formatting markers, and the final marker survive exactly once; page counts and A4 dimensions match. Source frontmatter stays out of the printed body. Save PDF and Print produce identical extracted text.
+- **16 baseline native PDFs** also passed across A4/Letter, portrait/landscape, and regular/first-page letterheads. Every page size and count matches its browser reference, and all 65 table rows, 12 paragraphs, and final marker remain present.
+- Actual generated PDFs were rasterized with Poppler and visually reviewed for white-paper formatting, dark reading appearance, and custom CSS. Browser assertions check resolved colors, backgrounds, weight, size, font inheritance, embedded text styles, and script-free independent HTML output.
+- Native testing exposed and fixed a per-note Fast Text Color theme mismatch: frontmatter now reaches Obsidian's postprocessors before its generated display is removed. Browser testing exposed and fixed a missing content-root reference in Paged.js that prevented scoped styles from applying consistently.
+- Restoring defaults supports Cancel/Escape, persistent replacement/recreation of originals, preservation of custom presets, and undo/redo. The 0.4.0 local-install ZIP passes its archive integrity check. A generated empty test vault was also smoke-tested.
+- Test outputs are kept in `test-results/`, `test-results-formatting-final/`, and `test-results-native-formatting/`; they contain synthetic content. The separate `print-studio-lab` vault includes sample notes, a snippet, the actual formatting plugin, and three sample presets. The working vault was not modified.
+
+Some early browser attempts timed out under memory pressure while Obsidian and Chromium were running together. Passing verification runs used them separately. Physical printer submission was replaced by file capture; no physical pages were printed. Windows/macOS dialogs, arbitrary third-party layouts, externally supplied fonts, and full theme fidelity remain manual/compatibility checks. Reading appearance is explicitly experimental.
+
+
 ## 0.3.13 consistent preview and output text
 
 - Lint, 53 unit tests, TypeScript/build, packaging, and all 28 browser/PDF tests passed.

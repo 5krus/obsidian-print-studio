@@ -1,0 +1,67 @@
+---
+cssclasses: [study-note]
+ftcTheme: default
+---
+# Print Studio formatting study
+
+PLAIN-CHECK is ordinary text.
+
+**BOLD-CHECK** uses the study CSS snippet. *ITALIC-CHECK* uses a second color.
+
+==HIGHLIGHT-CHECK== uses a yellow background.
+
+~={red}FTC-RED-CHECK=~ and ~={blue}FTC-BLUE-CHECK=~ use Fast Text Color. The blue text also has a custom size and highlight.
+
+<span style="color:#7e22ce;font-size:24px;background-color:#f3e8ff">INLINE-CHECK</span>
+
+ROW-00 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-01 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-02 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-03 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-04 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-05 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-06 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-07 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-08 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-09 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-10 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-11 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-12 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-13 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-14 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-15 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-16 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-17 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-18 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-19 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-20 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-21 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-22 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+ROW-23 **Bold study text**, *italic emphasis*, ~={green}Fast Text Color green=~ and ==highlighted text==. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word. This paragraph checks wrapping and pagination while retaining every word.
+
+====
+
+END-OF-STUDY

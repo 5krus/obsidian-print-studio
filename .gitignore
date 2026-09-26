@@ -4,6 +4,8 @@ build/
 release/
 *.zip
 test-results/
+test-results-native-formatting/
+test-results-formatting-final/
 playwright-report/
 
 # Optional local experiments are never release inputs.

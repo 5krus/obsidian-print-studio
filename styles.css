@@ -8,8 +8,20 @@
   overflow: hidden;
 }
 
+.ps-modal > .modal-header { margin: 0; padding: 0; }
 .ps-modal .modal-content { height: 100%; margin: 0; padding: 0; }
-.ps-modal .modal-close-button { top: var(--size-4-3); right: var(--size-4-3); z-index: 1; }
+/* Obsidian 1.13 uses a raised header button; older builds use modal-close-button. */
+.ps-modal > .modal-close-button,
+.ps-modal > .modal-header-button.mod-raised {
+  top: var(--size-4-3);
+  right: var(--size-4-3);
+  width: var(--input-height);
+  height: var(--input-height);
+  margin: 0;
+  translate: none;
+  transform: none;
+  z-index: 1;
+}
 .ps-modal-title { position: absolute; width: 1px; height: 1px; overflow: hidden; left: -10000px; white-space: nowrap; }
 
 .ps-studio {
@@ -101,6 +113,7 @@
 .ps-notes { color: var(--text-muted); font-size: var(--font-ui-smaller); line-height: var(--line-height-normal); padding: var(--size-4-3) var(--size-4-4); border-top: var(--border-width) solid var(--background-modifier-border); }
 .ps-studio :focus-visible { outline: 2px solid var(--background-modifier-border-focus); outline-offset: 2px; }
 .ps-render-source { position: fixed; left: -10000px; top: 0; width: 800px; visibility: hidden; pointer-events: none; }
+.ps-css-input { font-family: var(--font-monospace); min-height: 160px; tab-size: 2; }
 
 @media (max-width: 1000px) {
   .ps-sidebar { width: 320px; }
@@ -108,14 +121,13 @@
 }
 @media (max-width: 650px) {
   .ps-top { flex-wrap: wrap; gap: var(--size-4-2); }
+  .ps-modal .ps-identity { min-height: var(--input-height); }
   .ps-actions { width: 100%; margin: 0; }
   .ps-workbench { flex-direction: column; }
   .ps-sidebar { width: 100%; max-height: 42%; flex-shrink: 0; overflow-y: auto; border-right: 0; border-bottom: var(--border-width) solid var(--background-modifier-border); }
   .ps-preview { min-height: 0; }
 }
 
-.ps-preset-transfers { display: flex; gap: var(--size-4-2); padding-bottom: var(--size-4-2); }
-.ps-preset-transfers > button, .ps-preset-transfers > select { flex: 1; min-width: 0; }
 .ps-preview-bar { flex-wrap: wrap; }
 .ps-preview-controls { display: flex; align-items: center; gap: var(--size-4-1); }
 .ps-preview-controls input[type=number] { width: 52px; text-align: center; }

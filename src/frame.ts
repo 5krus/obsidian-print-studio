@@ -7,11 +7,13 @@ import {expandTemplate} from './template';
 import {paperSize} from './settings';
 import {layoutWarnings} from './layout-warnings';
 import {freezePageContent} from './page-snapshot';
+import {noteCssClasses} from './note-formatting';
 declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
 async function run() {
-  const source=document.createElement('div');source.className='ps-content';
+  const source=document.createElement('div');source.className='ps-content markdown-rendered markdown-preview-view';
+  source.classList.add(...noteCssClasses(job.context.metadata.cssclasses));
   // The parent serializes only cleanMarkup output into this network-isolated frame.
   source.append(...new DOMParser().parseFromString(job.html,'text/html').body.childNodes);
   if(job.preset.headingBreaks) {const headings=[...source.querySelectorAll('h1')];headings.slice(1).forEach(h=>h.classList.add('ps-heading-break'));}
@@ -45,7 +47,9 @@ async function run() {
   scheduler.port1.onmessage=()=>ticks.shift()?.();
   previewer.chunker.q.tick=callback=>{ticks.push(callback);scheduler.port2.postMessage(null);};
   previewer.chunker.hooks.afterPageLayout.register((_element,page)=>page.removeListeners());
-  const pages=await previewer.preview(source,[{'print-studio.css':pageCss(job.preset)}],document.querySelector<HTMLElement>('#ps-output')!).finally(()=>{scheduler.port1.close();scheduler.port2.close();});
+  // Include the content root in Paged.js's parsed tree. Passing the element
+  // directly omits its own reference and can strand descendants outside it.
+  const pages=await previewer.preview(source.outerHTML,[{'print-studio.css':pageCss(job.preset)+'\n'+(job.contentCss??'')}],document.querySelector<HTMLElement>('#ps-output')!).finally(()=>{scheduler.port1.close();scheduler.port2.close();});
   // Pagination is a fixed snapshot. Screen zoom and the print media switch must
   // never trigger Paged.js's incremental reflow on the completed document.
   pages.stop(); pages.pages.forEach(page=>page.removeListeners());
@@ -116,6 +120,9 @@ async function run() {
       // Export at actual size, regardless of the current preview magnification.
       const clone=document.documentElement.cloneNode(true) as HTMLElement;
       clone.querySelectorAll('script').forEach(script=>script.remove());
+      // A legal CSS string can contain </style>. Escape it before serializing
+      // style text as HTML so a font name or selector cannot inject markup.
+      clone.querySelectorAll('style').forEach(style=>{style.textContent=(style.textContent??'').replace(/</g,'\\3c ');});
       clone.querySelector<HTMLElement>('.pagedjs_pages')!.style.removeProperty('zoom');
       clone.querySelector('meta[http-equiv="Content-Security-Policy"]')!.setAttribute('content',"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none';");
       const html='<!doctype html>\n'+clone.outerHTML;

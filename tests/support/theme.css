@@ -57,3 +57,7 @@ input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .test-confirm { max-width: 420px; border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 24px; background: var(--background-primary); color: var(--text-normal); }
 .test-confirm::backdrop { background: #0008; }
 .test-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.test-menu { position: fixed; z-index: 1000; padding: 6px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-primary); box-shadow: 0 4px 16px #0004; }
+.test-menu button { display: flex; width: 100%; justify-content: flex-start; box-shadow: none; background: transparent; }
+.test-menu button:focus { background: var(--interactive-hover); }
+.test-menu hr { border: 0; border-top: 1px solid var(--background-modifier-border); }

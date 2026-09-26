@@ -178,9 +178,13 @@ for(const paper of ['A4','Letter'])for(const orientation of ['portrait','landsca
 test('preset transfers, navigation, theme changes and narrow layouts',async({page})=>{
   await page.goto('/test.html');await expect(page.getByRole('status')).toContainText('Ready to print');
   const downloadPromise=page.waitForEvent('download');
-  await page.getByRole('combobox',{name:'Export presets',exact:true}).selectOption('current');
+  await page.getByRole('button',{name:'Preset settings',exact:true}).click();
+  await page.getByRole('menuitem',{name:'Export current preset',exact:true}).click();
   const backup=await readFile((await (await downloadPromise).path())!,'utf8');
-  await page.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'preset.json',mimeType:'application/json',buffer:Buffer.from(backup)});
+  await page.getByRole('button',{name:'Preset settings',exact:true}).click();
+  const chooserPromise=page.waitForEvent('filechooser');
+  await page.getByRole('menuitem',{name:'Import presets',exact:true}).click();
+  await (await chooserPromise).setFiles({name:'preset.json',mimeType:'application/json',buffer:Buffer.from(backup)});
   await expect(page.getByRole('combobox',{name:'Preset',exact:true})).toContainText('Studio letterhead (imported)');
   await expect(page.getByRole('status')).toContainText('Ready to print');
   await page.getByRole('spinbutton',{name:'Page',exact:true}).fill('3');
@@ -247,25 +251,52 @@ test('pagination completes when the host stops delivering animation frames',asyn
   expect(await page.frameLocator('.ps-frame').locator('.pagedjs_page').count()).toBeGreaterThan(2);
 });
 
+test('preset settings stay compact and support keyboard dismissal',async({page})=>{
+  await page.goto('/test.html');
+  const settings=page.getByRole('button',{name:'Preset settings',exact:true});
+  for(const width of [1440,600]) {
+    await page.setViewportSize({width,height:900});
+    const selector=await page.getByRole('combobox',{name:'Preset',exact:true}).boundingBox();
+    const gear=await settings.boundingBox();
+    expect(Math.abs(selector!.y-gear!.y)).toBeLessThan(2);
+    expect(gear!.x).toBeGreaterThan(selector!.x);
+    expect(await page.locator('.ps-preset-box').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+    await settings.focus();await page.keyboard.press('Enter');
+    await expect(settings).toHaveAttribute('aria-expanded','true');
+    await expect(page.getByRole('menuitem')).toHaveCount(6);
+    await page.keyboard.press('End');
+    await expect(page.getByRole('menuitem',{name:'Remove preset',exact:true})).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(settings).toBeFocused();
+    await expect(settings).toHaveAttribute('aria-expanded','false');
+  }
+  await settings.click();
+  await page.getByRole('textbox',{name:'Company name',exact:true}).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+});
+
 test('preset removal dialog supports cancel, Escape, confirmation and undo',async({page})=>{
   await page.goto('/test.html');
   await expect(page.getByRole('status')).toContainText('Ready to print');
-  await page.getByRole('button',{name:'Duplicate preset',exact:true}).click();
+  await page.getByRole('button',{name:'Preset settings',exact:true}).click();
+  await page.getByRole('menuitem',{name:'Duplicate preset',exact:true}).click();
   const presets=page.getByRole('combobox',{name:'Preset',exact:true});
   const count=await presets.locator('option').count();
-  const remove=page.getByRole('button',{name:'Remove preset',exact:true});
+  const settings=page.getByRole('button',{name:'Preset settings',exact:true});
+  const remove=page.getByRole('menuitem',{name:'Remove preset',exact:true});
   const dialog=page.getByRole('dialog',{name:'Remove preset',exact:true});
-  await remove.click();
+  await settings.click();await remove.click();
   await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toBeFocused();
   await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
   await expect(dialog).toHaveCount(0);
   await expect(presets.locator('option')).toHaveCount(count);
-  await expect(remove).toBeFocused();
-  await remove.click();
+  await expect(settings).toBeFocused();
+  await settings.click();await remove.click();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(presets.locator('option')).toHaveCount(count);
-  await remove.click();
+  await settings.click();await remove.click();
   await dialog.getByRole('button',{name:'Remove',exact:true}).click();
   await expect(dialog).toHaveCount(0);
   await expect(presets.locator('option')).toHaveCount(count-1);

@@ -1,5 +1,7 @@
 export type Slots = {left: string; center: string; right: string};
 export type SlotFlags = Record<keyof Slots, boolean>;
+export const MAX_CUSTOM_CSS = 50_000;
+export type FormattingMode = 'studio' | 'text' | 'reading';
 export interface Preset {
   id: string; name: string; company: string; logo: string; logoName: string;
   paper: 'A4' | 'Letter'; orientation: 'portrait' | 'landscape';
@@ -9,6 +11,7 @@ export interface Preset {
   header: Slots; footer: Slots; headerRule: boolean; footerRule: boolean; headingBreaks: boolean;
   headerUppercase: SlotFlags; footerUppercase: SlotFlags; firstPageHeaderUppercase: SlotFlags;
   hideEmbeddedNoteMetadata: boolean;
+  formatting: FormattingMode; customCss: string; customCssEnabled: boolean;
   differentFirstPage: boolean; firstPageMarginTop: number; firstPageLogoHeight: number;
   firstPageHeader: Slots; firstPageHeaderRule: boolean; logoFirstPageOnly: boolean;
 }
@@ -21,6 +24,7 @@ export const DEFAULT_PRESET: Preset = {
   footer: {left: '{{company}}', center: '{{date}}', right: '{{page}} / {{pages}}'},
   headerRule: true, footerRule: true, headingBreaks: false,
   hideEmbeddedNoteMetadata: false,
+  formatting: 'studio', customCss: '', customCssEnabled: false,
   headerUppercase: {left: false, center: false, right: false},
   footerUppercase: {left: false, center: false, right: false},
   firstPageHeaderUppercase: {left: false, center: false, right: false},
@@ -51,6 +55,7 @@ export function normalizePreset(input: unknown): Preset {
     header:slots(v.header,d.header), footer:slots(v.footer,d.footer), headerRule:bool(v.headerRule,d.headerRule), footerRule:bool(v.footerRule,d.footerRule), headingBreaks:bool(v.headingBreaks,d.headingBreaks),
     headerUppercase:flags(v.headerUppercase), footerUppercase:flags(v.footerUppercase), firstPageHeaderUppercase:flags(v.firstPageHeaderUppercase),
     hideEmbeddedNoteMetadata:bool(v.hideEmbeddedNoteMetadata,d.hideEmbeddedNoteMetadata),
+    formatting:v.formatting==='text' || v.formatting==='reading'?v.formatting:'studio', customCss:str(v.customCss,'',MAX_CUSTOM_CSS), customCssEnabled:bool(v.customCssEnabled,false),
     differentFirstPage:bool(v.differentFirstPage,d.differentFirstPage), firstPageMarginTop:num(v.firstPageMarginTop,d.firstPageMarginTop,22,70), firstPageLogoHeight:num(v.firstPageLogoHeight,d.firstPageLogoHeight,4,30),
     firstPageHeader:slots(v.firstPageHeader,d.firstPageHeader), firstPageHeaderRule:bool(v.firstPageHeaderRule,d.firstPageHeaderRule), logoFirstPageOnly:bool(v.logoFirstPageOnly,d.logoFirstPageOnly)};
 }

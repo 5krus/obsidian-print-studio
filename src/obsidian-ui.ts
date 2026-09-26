@@ -1,15 +1,15 @@
-import {App, ButtonComponent, ColorComponent, DropdownComponent, Modal, Setting, TextAreaComponent, TextComponent, ToggleComponent, setIcon} from 'obsidian';
+import {App, ButtonComponent, ColorComponent, DropdownComponent, Menu, Modal, Setting, TextAreaComponent, TextComponent, ToggleComponent, setIcon} from 'obsidian';
 import type {StudioUI} from './ui';
 
-class RemovePresetModal extends Modal {
+class PresetConfirmationModal extends Modal {
   private confirmed = false;
-  constructor(app: App, private presetName: string, private resolve: (value: boolean) => void) {super(app);}
+  constructor(app: App, private title: string, private description: string, private action: string, private resolve: (value: boolean) => void) {super(app);}
   onOpen() {
-    this.setTitle('Remove preset');
-    this.contentEl.createEl('p', {text: `Remove “${this.presetName}”? You can undo this while Print Studio stays open.`});
+    this.setTitle(this.title);
+    this.contentEl.createEl('p', {text: this.description});
     const actions = this.contentEl.createDiv({cls: 'modal-button-container'});
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
-    new ButtonComponent(actions).setButtonText('Remove').setDestructive().setCta().onClick(() => {this.confirmed = true; this.close();});
+    new ButtonComponent(actions).setButtonText(this.action).setDestructive().setCta().onClick(() => {this.confirmed = true; this.close();});
   }
   onClose() {this.contentEl.empty(); this.resolve(this.confirmed);}
 }
@@ -38,7 +38,27 @@ export function obsidianUI(app: App): StudioUI {
       button.buttonEl.setAttribute('aria-label', label);
       return button.buttonEl;
     },
+    menu(anchor, actions) {
+      const menu = new Menu().setUseNativeMenu(false);
+      let open = true;
+      const close = () => {if (open) menu.hide();};
+      menu.onHide(() => {
+        open = false;
+        anchor.setAttribute('aria-expanded', 'false');
+        if (anchor.isConnected) anchor.focus();
+      });
+      for (const action of actions) {
+        if (action.separatorBefore) menu.addSeparator();
+        menu.addItem(item => item.setTitle(action.label).setIcon(action.icon).setDisabled(!!action.disabled).onClick(() => {close(); action.action();}));
+      }
+      anchor.focus();
+      anchor.setAttribute('aria-expanded', 'true');
+      const rect = anchor.getBoundingClientRect();
+      menu.showAtPosition({x: rect.left, y: rect.bottom}, anchor.ownerDocument);
+      return close;
+    },
     icon: setIcon,
-    confirmRemoval: name => new Promise(resolve => new RemovePresetModal(app, name, resolve).open()),
+    confirmRemoval: name => new Promise(resolve => new PresetConfirmationModal(app,'Remove preset',`Remove “${name}”? You can undo this while Print Studio stays open.`,'Remove',resolve).open()),
+    confirmRestoreBuiltIns: () => new Promise(resolve => new PresetConfirmationModal(app,'Restore built-in presets','Reset Studio letterhead, Editorial and Essential, including any renamed originals. Deleted originals will return. Custom and imported presets stay as they are. You can undo this while Print Studio stays open.','Restore',resolve).open()),
   };
 }

@@ -37,8 +37,9 @@ export function printMarkerLines(markdown:string):Array<{line:number;kind:'break
   return markers;
 }
 export function pageBreakLines(markdown:string):number[] {return printMarkerLines(markdown).filter(marker=>marker.kind==='break').map(marker=>marker.line);}
-export function prepareMarkdown(markdown: string): string {
+export function prepareMarkdown(markdown: string,keepFrontmatter=false): string {
   const body=stripFrontmatter(markdown);
   const markers=new Map(printMarkerLines(body).map(marker=>[marker.line,marker.kind]));
-  return body.split('\n').map((line,index)=>markers.has(index+1)?`\n<div class="${markers.get(index+1)==='break'?'ps-page-break':'ps-bottom-marker'}"></div>\n`:line).join('\n');
+  const prepared=body.split('\n').map((line,index)=>markers.has(index+1)?`\n<div class="${markers.get(index+1)==='break'?'ps-page-break':'ps-bottom-marker'}"></div>\n`:line).join('\n');
+  return (keepFrontmatter?markdown.slice(0,markdown.length-body.length):'')+prepared;
 }

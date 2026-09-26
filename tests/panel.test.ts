@@ -10,6 +10,7 @@ const source={html:'<h1>Note</h1>',context:{title:'Note',vault:'Work',date:'Toda
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 after(()=>dom.window.close());
 const button=(name:string)=>document.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+const presetAction=(name:string)=>{if(!document.querySelector('[role=menu]'))button('Preset settings').click();return button(name);};
 const job=()=>JSON.parse(document.querySelector('iframe')!.srcdoc.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
 const send=(data:Record<string,unknown>)=>window.dispatchEvent(new dom.window.MessageEvent('message',{source:document.querySelector('iframe')!.contentWindow,data:{token:job().token,...data}}));
 
@@ -46,7 +47,7 @@ test('undo and redo persist restored presets, including removed presets',async()
   const panel=new StudioPanel(document.querySelector('#root')!,{ui:{...browserUI,confirmRemoval:async()=>true},settings:defaults(),source:async()=>source,save:async s=>{saved=s;},notify:()=>{}});
   try {
     await tick();assert.equal(button('Undo change').disabled,true);
-    button('Remove preset').click();await tick();assert.equal(saved?.presets.length,2);
+    presetAction('Remove preset').click();await tick();assert.equal(saved?.presets.length,2);
     button('Undo change').click();await tick();assert.equal(saved?.presets.length,3);assert.equal(saved?.activeId,'classic');
     assert.equal(document.activeElement,button('Redo change'));
     button('Redo change').click();await tick();assert.equal(saved?.presets.length,2);
@@ -108,9 +109,9 @@ test('preset edits retain open sections and use an accessible confirmation befor
   const button=(name:string)=>document.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
   try {
     await tick();
-    assert.equal(button('Remove preset').disabled,true);
+    assert.equal(presetAction('Remove preset').disabled,true);
     document.querySelector<HTMLDetailsElement>('[data-section="Page layout"]')!.open=true;
-    button('Duplicate preset').click();
+    presetAction('Duplicate preset').click();
     await tick();
     assert.equal(saved?.presets.length,2);
     assert.equal(document.querySelector<HTMLDetailsElement>('[data-section="Page layout"]')!.open,true);
@@ -124,11 +125,11 @@ test('preset edits retain open sections and use an accessible confirmation befor
     assert.equal(saved?.presets.find(p=>p.id===saved?.activeId)?.headingBreaks,!wasOn);
     assert.equal(toggle.getAttribute('aria-checked'),String(!wasOn));
     assert.ok(document.getElementById(toggle.getAttribute('aria-labelledby')!)?.textContent);
-    button('Remove preset').click();await tick();
+    presetAction('Remove preset').click();await tick();
     assert.equal(saved?.presets.length,2,'Cancel keeps the preset');
-    confirm=true;button('Remove preset').click();await tick();
+    confirm=true;presetAction('Remove preset').click();await tick();
     assert.equal(saved?.presets.length,1);
-    assert.equal(button('Remove preset').disabled,true);
+    assert.equal(presetAction('Remove preset').disabled,true);
     assert.deepEqual(confirmations,['My letterhead','My letterhead']);
   }finally{panel.dispose();}
 });

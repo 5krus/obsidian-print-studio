@@ -85,3 +85,32 @@ test('embedded metadata visibility saves with presets and older backups preserve
   assert.throws(()=>importPresets(JSON.stringify(old),settings),/invalid hideEmbeddedNoteMetadata/);
   assert.equal(normalizePreset({hideEmbeddedNoteMetadata:'true'}).hideEmbeddedNoteMetadata,false);
 });
+
+test('formatting and CSS round-trip, older backups stay classic, and malformed values fail atomically',()=>{
+  const settings=defaults(),p=settings.presets[0];
+  p.formatting='reading';p.customCssEnabled=true;p.customCss='strong { color: red; }';
+  const copy=importPresets(exportPresets([p]),settings).presets[3];
+  assert.equal(copy.formatting,'reading');assert.equal(copy.customCss,p.customCss);assert.equal(copy.customCssEnabled,true);
+  const old=JSON.parse(exportPresets([p]));
+  for(const key of ['formatting','customCss','customCssEnabled'])delete old.presets[0][key];
+  const legacy=importPresets(JSON.stringify(old),settings).presets[3];
+  assert.equal(legacy.formatting,'studio');assert.equal(legacy.customCss,'');assert.equal(legacy.customCssEnabled,false);
+  for(const [key,value] of [['formatting','unknown'],['customCss',4],['customCssEnabled','yes'],['customCss','x'.repeat(50_001)]]){
+    const data=JSON.parse(exportPresets([p]));data.presets[0][key as string]=value;
+    assert.throws(()=>importPresets(JSON.stringify(data),settings),new RegExp(`invalid ${key}`));
+  }
+});
+
+test('restoration resets renamed originals, recreates deleted ones, retains customs, and respects capacity',async()=>{
+  const {restoreBuiltInPresets}=await import('../src/presets');
+  const s=defaults();s.presets[0].name='Renamed original';s.presets[0].customCss='p{color:red}';
+  const custom={...structuredClone(s.presets[0]),id:'custom',name:'Studio letterhead'};
+  s.presets=[s.presets[0],custom];s.activeId='custom';
+  const restored=restoreBuiltInPresets(s);
+  assert.equal(restored.activeId,'custom');assert.equal(restored.presets.length,4);
+  assert.deepEqual(restored.presets[0],defaults().presets[0]);assert.deepEqual(restored.presets[1],custom);
+  assert.equal(s.presets[0].name,'Renamed original');
+  restored.presets[1].header.left='Independent';assert.notEqual(custom.header.left,'Independent');
+  const full={...s,presets:Array.from({length:30},(_,i)=>({...custom,id:`custom-${i}`}))};
+  assert.throws(()=>restoreBuiltInPresets(full),/Make room/);assert.equal(full.presets.length,30);
+});

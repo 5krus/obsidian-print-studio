@@ -1,8 +1,17 @@
-import {DEFAULT_PRESET, normalizePreset, type Preset, type Settings} from './settings';
+import {DEFAULT_PRESET, defaults, normalizePreset, type Preset, type Settings} from './settings';
 
 export const MAX_PRESETS = 30;
 export const MAX_PRESET_FILE_BYTES = 10_000_000;
 const format = 'print-studio-presets';
+
+/** Reset built-in identities, preserving all user-created presets and their order. */
+export function restoreBuiltInPresets(settings:Settings):Settings {
+  const originals=defaults().presets;
+  const byId=new Map(originals.map(p=>[p.id,p]));
+  const missing=originals.filter(p=>!settings.presets.some(existing=>existing.id===p.id));
+  if(settings.presets.length+missing.length>MAX_PRESETS)throw new Error('Make room for the missing built-in presets first. You can keep up to 30 presets.');
+  return {...settings,presets:[...settings.presets.map(p=>structuredClone(byId.get(p.id)??p)),...missing]};
+}
 
 export function exportPresets(presets: Preset[]): string {
   const json = JSON.stringify({format, version: 1, presets: presets.map(normalizePreset)}, null, 2);
@@ -29,7 +38,7 @@ export function importPresets(text: string, settings: Settings): Settings {
     for (const key of Object.keys(DEFAULT_PRESET) as (keyof Preset)[]) {
       if (key === 'id') continue;
       // Additive settings may be absent from older version 1 exports.
-      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly','headerUppercase','footerUppercase','firstPageHeaderUppercase','hideEmbeddedNoteMetadata'].includes(key) && !Object.hasOwn(input,key))continue;
+      if(['differentFirstPage','firstPageMarginTop','firstPageLogoHeight','firstPageHeader','firstPageHeaderRule','logoFirstPageOnly','headerUppercase','footerUppercase','firstPageHeaderUppercase','hideEmbeddedNoteMetadata','formatting','customCss','customCssEnabled'].includes(key) && !Object.hasOwn(input,key))continue;
       const invalid=()=>new Error(`Preset ${index + 1} has an invalid ${key} value.`);
       if(key==='header' || key==='footer' || key==='firstPageHeader' || key==='headerUppercase' || key==='footerUppercase' || key==='firstPageHeaderUppercase') {
         const slots=input[key];

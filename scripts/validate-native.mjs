@@ -1,6 +1,6 @@
 import {build} from 'esbuild';
 import {execFileSync} from 'node:child_process';
-import {readFile,rm} from 'node:fs/promises';
+import {readFile,writeFile,rm} from 'node:fs/promises';
 import {resolve,dirname,join} from 'node:path';
 import assert from 'node:assert/strict';
 const fixture=resolve('build/native-validation.cjs'),results=resolve('test-results');
@@ -9,7 +9,22 @@ const resultFile=join(results,'native-validation-result.json');
 await rm(resultFile,{force:true});
 const code=`delete require.cache[require.resolve(${JSON.stringify(fixture)})];require(${JSON.stringify(fixture)}).validate(require('electron').remote,${JSON.stringify(results)}).then(paths=>require('node:fs').writeFileSync(${JSON.stringify(resultFile)},JSON.stringify({paths}))).catch(error=>require('node:fs').writeFileSync(${JSON.stringify(resultFile)},JSON.stringify({error:String(error)})))`;
 // CLI arguments are passed directly, without shell interpolation.
-execFileSync('obsidian',['eval',`code=${code}`],{encoding:'utf8',timeout:120_000});
+if(process.env.PRINT_STUDIO_CDP_URL) {
+  // Optional transport for a separate test profile that the global CLI cannot
+  // discover. The same production output adapter and assertions run below.
+  const {chromium}=await import('playwright');
+  const browser=await chromium.connectOverCDP(process.env.PRINT_STUDIO_CDP_URL);
+  try {
+    const page=browser.contexts()[0].pages().find(page=>page.url().startsWith('app://obsidian.md/'));
+    assert.ok(page,'Open the isolated Obsidian test vault first.');
+    assert.equal(await page.evaluate(()=>app.vault.getName()),'print-studio-lab');
+    const paths=await page.evaluate(async({fixture,results})=>{
+      delete require.cache[require.resolve(fixture)];
+      return require(fixture).validate(require('electron').remote,results);
+    },{fixture,results});
+    await writeFile(resultFile,JSON.stringify({paths}));
+  } finally {await browser.close();}
+} else execFileSync('obsidian',['eval',`code=${code}`],{encoding:'utf8',timeout:120_000});
 // Obsidian's CLI may return before the asynchronous evaluation completes.
 let paths;
 for(let attempt=0;attempt<60;attempt++) {

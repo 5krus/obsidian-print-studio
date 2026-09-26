@@ -44,3 +44,11 @@ test('recovered preset identities cannot collide with an existing generated-look
   const settings=normalizeSettings({presets:[{id:'preset-2'},{id:'x'},{id:'x'}]});
   assert.equal(new Set(settings.presets.map(p=>p.id)).size,3);
 });
+
+test('native preparation retains frontmatter for postprocessors without transforming marker examples inside it',()=>{
+  const markdown='---\nftcTheme: default\nexample: |\n  ====\n---\n# Body\n\n====\n\nEnd';
+  const prepared=prepareMarkdown(markdown,true);
+  assert.ok(prepared.startsWith('---\nftcTheme: default\nexample: |\n  ====\n---\n'));
+  assert.equal((prepared.match(/ps-page-break/g)??[]).length,1);
+  assert.doesNotMatch(prepareMarkdown(markdown),/ftcTheme/);
+});

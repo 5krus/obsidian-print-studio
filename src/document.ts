@@ -2,11 +2,17 @@ import DOMPurify from 'dompurify';
 import type {ElementFactory} from './ui';
 import {normalizePreset, paperSize, type Preset} from './settings';
 import {escapeHtml, type DocumentContext} from './template';
-export interface PrintJob {html:string; preset:Preset; context:DocumentContext}
-export function cleanMarkup(html: string, createElement: ElementFactory, hideEmbeddedNoteMetadata = false): string {
-  const clean = DOMPurify.sanitize(html, {RETURN_DOM_FRAGMENT:true, USE_PROFILES:{html:true,svg:true,svgFilters:true}, ADD_ATTR:['xmlns'], ADD_FORBID_CONTENTS:['button'], FORBID_TAGS:['style','button','iframe','object','embed','video','audio','form'], FORBID_ATTR:['style','srcset']});
+import {compileContentCss, filterTextStyle} from './content-css';
+import {noteFormattingCss, type NoteFormatting} from './note-formatting';
+export interface PrintJob {html:string; preset:Preset; context:DocumentContext; formatting?:NoteFormatting; contentCss?:string}
+function cleanRoot(html: string, createElement: ElementFactory, hideEmbeddedNoteMetadata = false, preserveFormatting=false): HTMLElement {
+  const clean = DOMPurify.sanitize(html, {RETURN_DOM_FRAGMENT:true, USE_PROFILES:{html:true,svg:true,svgFilters:true}, ADD_ATTR:['xmlns'], ADD_FORBID_CONTENTS:['button'], FORBID_TAGS:['style','button','iframe','object','embed','video','audio','form'], FORBID_ATTR:preserveFormatting?['srcset']:['style','srcset']});
   const root = createElement('div');
   root.append(clean);
+  if(preserveFormatting)for(const element of root.querySelectorAll<HTMLElement>('[style]')) {
+    const safe=createElement('span');filterTextStyle(element.style,safe.style);
+    element.removeAttribute('style');if(safe.style.cssText)element.setAttribute('style',safe.style.cssText);
+  }
   root.querySelectorAll('input').forEach(input=>{if(input.type==='checkbox'){input.closest('li')?.classList.add('task-list-item');const mark=createElement('span');mark.className='ps-check';mark.textContent=input.checked?'☑\uFE0E':'☐';input.replaceWith(mark);}else input.remove();});
   root.querySelectorAll('img').forEach(img=>{if(!/^data:image\/(png|jpeg|gif|webp|svg\+xml);(?:base64,|charset=utf-8,)/i.test(img.src)) {const alt=createElement('span');alt.className='ps-image-placeholder';alt.textContent=`[Image: ${img.alt || 'unavailable'}]`;img.replaceWith(alt);}});
   root.querySelectorAll('a').forEach(a=>{const href=a.getAttribute('href') ?? '';if(!/^(https?:|mailto:|#)/i.test(href)) a.removeAttribute('href');});
@@ -27,7 +33,10 @@ export function cleanMarkup(html: string, createElement: ElementFactory, hideEmb
   for(const wrapper of root.querySelectorAll('.markdown-embed .markdown-embed-content,.markdown-embed .markdown-preview-view')) {
     wrapper.replaceWith(...wrapper.childNodes);
   }
-  return root.innerHTML;
+  return root;
+}
+export function cleanMarkup(html:string,createElement:ElementFactory,hideEmbeddedNoteMetadata=false,preserveFormatting=false):string {
+  return cleanRoot(html,createElement,hideEmbeddedNoteMetadata,preserveFormatting).innerHTML;
 }
 export function pageCss(preset: Preset): string {
   const p=normalizePreset(preset), [w,h]=paperSize(p);
@@ -46,7 +55,10 @@ export function pageCss(preset: Preset): string {
 }
 export function frameDocument(job: PrintJob, token: string, createElement: ElementFactory, colorScheme: 'light' | 'dark' = 'light'): string {
   const preset=normalizePreset(job.preset);
-  const payload=JSON.stringify({...job,preset,html:cleanMarkup(job.html, createElement, preset.hideEmbeddedNoteMetadata),token}).replace(/</g,'\\u003c');
+  const formatted=preset.formatting!=='studio'?job.formatting:undefined;
+  const root=cleanRoot(formatted?.html??job.html,createElement,preset.hideEmbeddedNoteMetadata,Boolean(formatted));
+  const contentCss=(formatted?noteFormattingCss(root,formatted.rootStyle,preset,createElement):'')+'\n'+(preset.customCssEnabled?compileContentCss(preset.customCss):'');
+  const payload=JSON.stringify({preset,context:job.context,html:root.innerHTML,contentCss,token}).replace(/</g,'\\u003c');
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' blob:; img-src data:; font-src data:; connect-src 'none';"><title>${escapeHtml(job.context.title)} — Print Studio</title><style data-pagedjs-ignore>
   :root{color-scheme:${colorScheme==='dark'?'dark':'light'}}html,body{background:transparent;margin:0}.pagedjs_pages{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px}.pagedjs_page{color-scheme:light;background:white;box-shadow:0 2px 12px #00000026;flex-shrink:0}.pagedjs_pagebox{position:relative}#ps-loading{display:none}
   @media print{html,body{color-scheme:light;background:white!important}.pagedjs_pages{display:block!important;padding:0!important;zoom:1!important}.pagedjs_page{margin:0!important;box-shadow:none!important;break-after:page}.pagedjs_page:last-child{break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}#ps-loading{display:none}}
