@@ -1,4 +1,4 @@
-import {TEXT_PROPERTIES, filterTextStyle} from './content-css';
+import {TEXT_PROPERTIES, serializeTextStyle, textStyleDeclarations} from './content-css';
 import {serializeRenderedNote} from './rendered-note';
 import type {ElementFactory} from './ui';
 import type {Preset} from './settings';
@@ -26,56 +26,58 @@ export function captureNoteFormatting(source:HTMLElement,createElement:ElementFa
     }
   });
   // Reading surfaces can be transparent and inherit their backdrop from a pane.
+  const rootStyle=textStyleDeclarations(clone.style);
+  rootStyle.set('background-color','#ffffff');
   let ancestor:HTMLElement|null=source;
   while(ancestor) {
     const background=view.getComputedStyle(ancestor).backgroundColor;
-    if(background && background!=='transparent' && background!=='rgba(0, 0, 0, 0)') {clone.style.backgroundColor=background;break;}
+    if(background && background!=='transparent' && background!=='rgba(0, 0, 0, 0)') {rootStyle.set('background-color',background);break;}
     ancestor=ancestor.parentElement;
   }
-  if(!ancestor)clone.style.setProperty('background-color','#ffffff');
-  return {html:serializeRenderedNote(clone,createElement),rootStyle:clone.style.cssText};
+  return {html:serializeRenderedNote(clone,createElement),rootStyle:serializeTextStyle(rootStyle)};
 }
 
 /** Turn filtered snapshots into low-specificity rules so custom CSS can win. */
 export function noteFormattingCss(root:HTMLElement,rootStyle:string,preset:Preset,createElement:ElementFactory):string {
   const original=createElement('span');original.style.cssText=rootStyle;
-  const base=createElement('span');filterTextStyle(original.style,base.style);
-  const baseSize=parseFloat(base.style.fontSize)||16;
-  const baseLine=(base.style.lineHeight.endsWith('px')?parseFloat(base.style.lineHeight)/baseSize:parseFloat(base.style.lineHeight)) || 1.5;
+  const base=textStyleDeclarations(original.style);
+  const value=(style:ReadonlyMap<string,string>,property:string)=>style.get(property)??'';
+  const baseSize=parseFloat(value(base,'font-size'))||16;
+  const lineRatio=(style:ReadonlyMap<string,string>)=>value(style,'line-height').endsWith('px')?parseFloat(value(style,'line-height'))/(parseFloat(value(style,'font-size'))||baseSize):parseFloat(value(style,'line-height'));
+  const baseLine=lineRatio(base)||1.5;
   const studioFont=preset.font==='serif'?'Georgia,"Times New Roman",serif':'Arial,Helvetica,sans-serif';
-  const lineRatio=(style:CSSStyleDeclaration)=>style.lineHeight.endsWith('px')?parseFloat(style.lineHeight)/(parseFloat(style.fontSize)||baseSize):parseFloat(style.lineHeight);
-  const convert=(input:CSSStyleDeclaration,parent?:CSSStyleDeclaration)=>{
-    const target=createElement('span');filterTextStyle(input,target.style);
-    const size=parseFloat(target.style.fontSize)||baseSize;
+  const convert=(input:ReadonlyMap<string,string>,parent?:ReadonlyMap<string,string>)=>{
+    const target=new Map(input);
+    const size=parseFloat(value(target,'font-size'))||baseSize;
     // Resolve inheritance after structural cleanup: an embedded reading-view
     // wrapper may have been removed, but its text appearance must survive.
-    if(parent)for(const property of inherited)if(input.getPropertyValue(property) && input.getPropertyValue(property)===parent.getPropertyValue(property))target.style.setProperty(property,'inherit');
-    if(target.style.fontSize.endsWith('px'))target.style.fontSize=parent?`${size/(parseFloat(parent.fontSize)||baseSize)}em`:`${Math.max(.01,size/baseSize*preset.fontSize)}pt`;
+    if(parent)for(const property of inherited)if(input.get(property) && input.get(property)===parent.get(property))target.set(property,'inherit');
+    if(value(target,'font-size').endsWith('px'))target.set('font-size',parent?`${size/(parseFloat(value(parent,'font-size'))||baseSize)}em`:`${Math.max(.01,size/baseSize*preset.fontSize)}pt`);
     const ratio=lineRatio(input);
-    if(Number.isFinite(ratio))target.style.lineHeight=parent && Math.abs(ratio-lineRatio(parent))<.0001?'inherit':String(ratio/baseLine*preset.lineHeight);
+    if(Number.isFinite(ratio))target.set('line-height',parent && Math.abs(ratio-lineRatio(parent))<.0001?'inherit':String(ratio/baseLine*preset.lineHeight));
     if(preset.formatting==='text') {
-      if(target.style.color===base.style.color)target.style.setProperty('color','#262727');
-      if(target.style.backgroundColor===base.style.backgroundColor)target.style.setProperty('background-color','transparent');
-      if(target.style.fontFamily===base.style.fontFamily)target.style.fontFamily=studioFont;
+      if(value(target,'color')===value(base,'color'))target.set('color','#262727');
+      if(value(target,'background-color')===value(base,'background-color'))target.set('background-color','transparent');
+      if(value(target,'font-family')===value(base,'font-family'))target.set('font-family',studioFont);
     }
-    return target.style.cssText;
+    return serializeTextStyle(target);
   };
   root.querySelectorAll('[data-ps-format]').forEach(element=>element.removeAttribute('data-ps-format'));
-  const rules=[`.ps-content{${convert(base.style)}}`];
-  if(preset.formatting==='reading' && base.style.backgroundColor) {
-    rules.push(`.pagedjs_page{background-color:${base.style.backgroundColor}}`);
+  const rules=[`.ps-content{${convert(base)}}`];
+  if(preset.formatting==='reading' && base.get('background-color')) {
+    rules.push(`.pagedjs_page{background-color:${base.get('background-color')}}`);
     // Use the note's foreground for furniture on colored paper, too.
-    if(base.style.color)rules.push(`.ps-page-header,.ps-page-footer{color:${base.style.color};border-color:${base.style.color}}.ps-page-border{border-color:${base.style.color}}`);
+    if(base.get('color'))rules.push(`.ps-page-header,.ps-page-footer{color:${base.get('color')};border-color:${base.get('color')}}.ps-page-border{border-color:${base.get('color')}}`);
   }
   const styles=new Map<string,number>();
-  const originals=new Map<HTMLElement,CSSStyleDeclaration>();
+  const originals=new Map<HTMLElement,Map<string,string>>();
   for(const element of root.querySelectorAll<HTMLElement>('[style]')) {
-    const copy=createElement('span');copy.style.cssText=element.style.cssText;originals.set(element,copy.style);
+    originals.set(element,textStyleDeclarations(element.style));
   }
   for(const [element,original] of originals) {
     let ancestor=element.parentElement;
     while(ancestor && ancestor!==root && !originals.has(ancestor))ancestor=ancestor.parentElement;
-    const style=convert(original,ancestor && originals.get(ancestor)||base.style);element.removeAttribute('style');
+    const style=convert(original,ancestor && originals.get(ancestor)||base);element.removeAttribute('style');
     if(!style)continue;
     let id=styles.get(style);
     if(id===undefined){id=styles.size;styles.set(style,id);rules.push(`.ps-content :where([data-ps-format="${id}"]){${style}}`);}

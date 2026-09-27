@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
 import {build} from 'esbuild';
+import {modernPdfLib} from './pdf-lib-build.mjs';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -9,7 +10,7 @@ import assert from 'node:assert/strict';
 // the supplied synthetic lab vault. Never run this against a personal vault.
 const results=resolve('test-results-native-formatting');await mkdir(results,{recursive:true});
 const fixture=resolve('build/native-formatting.cjs');
-await build({entryPoints:['tests/native/formatting.ts'],bundle:true,platform:'node',format:'cjs',outfile:fixture});
+await build({entryPoints:['tests/native/formatting.ts'],bundle:true,platform:'node',format:'cjs',target:'es2022',outfile:fixture,plugins:[modernPdfLib]});
 const browser=await chromium.connectOverCDP('http://127.0.0.1:9227');
 try {
   const page=browser.contexts()[0].pages().find(p=>p.url().startsWith('app://obsidian.md/'));
@@ -17,12 +18,13 @@ try {
   assert.equal(await page.evaluate(()=>app.vault.getName()),'print-studio-lab','Refusing to modify a personal vault.');
   for(const other of browser.contexts()[0].pages())if(other!==page && (await other.title()).startsWith('Settings - print-studio-lab'))await other.close();
   await page.bringToFront();
-  await page.evaluate(async()=>{
+  await page.evaluate(async fixture=>{
+    delete require.cache[require.resolve(fixture)];
     const plugin=app.plugins.plugins['print-studio'];for(const modal of plugin?.studios??[])modal.close();
     await app.plugins.disablePlugin('print-studio');await app.plugins.enablePlugin('print-studio');
     await app.workspace.getLeaf(false).openFile(app.vault.getFileByPath('Formatting study.md'));
     const leaf=app.workspace.getMostRecentLeaf();await leaf.setViewState({type:'markdown',state:{file:'Formatting study.md',mode:'preview'}});
-  });
+  },fixture);
   const matrix=[['light','studio'],['light','text'],['light','reading'],['dark','text'],['dark','reading'],['light','custom']];
   const report=[];
   for(const [theme,mode] of matrix) {
@@ -32,9 +34,15 @@ try {
       // Switch the same body classes used by Obsidian's light/dark themes.
       document.body.classList.toggle('theme-dark',theme==='dark');document.body.classList.toggle('theme-light',theme==='light');
       const preset=plugin.studioSettings.presets.find(p=>p.id===plugin.studioSettings.activeId);
+      // Start each case from the same built-in layout, regardless of lab edits.
+      const identity={id:preset.id,name:preset.name};
+      Object.assign(preset,require(fixture).formattingDefaults().presets.find(p=>p.id==='minimal'),identity);
       preset.formatting=mode==='custom'?'text':mode;preset.customCssEnabled=mode==='custom';
       preset.customCss=mode==='custom'?'strong {color:#cc00cc} .ftc-color-default-blue {background-color:#a5f3fc}':'';
-      preset.header.left='Native formatting check';preset.footer.left='Print Studio prototype';
+      // Fix every slot so prior lab edits and today's date cannot change the
+      // reference output while comparing renderer/library builds.
+      preset.header={left:'Native formatting check',center:'',right:''};
+      preset.footer={left:'Print Studio prototype',center:'',right:'{{page}} / {{pages}}'};
       plugin.openStudio(app.vault.getFileByPath('Formatting study.md'));
       const modal=[...plugin.studios][0];
       window.formattingResult=undefined;

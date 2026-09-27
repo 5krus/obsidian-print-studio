@@ -4,6 +4,7 @@ import {normalizePreset, paperSize, type Preset} from './settings';
 import {escapeHtml, type DocumentContext} from './template';
 import {compileContentCss, filterTextStyle} from './content-css';
 import {noteFormattingCss, type NoteFormatting} from './note-formatting';
+import {preparePrintRoot,printTemplates} from './print-structure';
 export interface PrintJob {html:string; preset:Preset; context:DocumentContext; formatting?:NoteFormatting; contentCss?:string}
 function cleanRoot(html: string, createElement: ElementFactory, hideEmbeddedNoteMetadata = false, preserveFormatting=false): HTMLElement {
   const clean = DOMPurify.sanitize(html, {RETURN_DOM_FRAGMENT:true, USE_PROFILES:{html:true,svg:true,svgFilters:true}, ADD_ATTR:['xmlns'], ADD_FORBID_CONTENTS:['button'], FORBID_TAGS:['style','button','iframe','object','embed','video','audio','form'], FORBID_ATTR:preserveFormatting?['srcset']:['style','srcset']});
@@ -58,9 +59,10 @@ export function frameDocument(job: PrintJob, token: string, createElement: Eleme
   const formatted=preset.formatting!=='studio'?job.formatting:undefined;
   const root=cleanRoot(formatted?.html??job.html,createElement,preset.hideEmbeddedNoteMetadata,Boolean(formatted));
   const contentCss=(formatted?noteFormattingCss(root,formatted.rootStyle,preset,createElement):'')+'\n'+(preset.customCssEnabled?compileContentCss(preset.customCss):'');
-  const payload=JSON.stringify({preset,context:job.context,html:root.innerHTML,contentCss,token}).replace(/</g,'\\u003c');
+  preparePrintRoot(root,preset,job.context.metadata.cssclasses,createElement);
+  const payload=JSON.stringify({preset,context:job.context,html:root.outerHTML,contentCss,token}).replace(/</g,'\\u003c');
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' blob:; img-src data:; font-src data:; connect-src 'none';"><title>${escapeHtml(job.context.title)} — Print Studio</title><style data-pagedjs-ignore>
   :root{color-scheme:${colorScheme==='dark'?'dark':'light'}}html,body{background:transparent;margin:0}.pagedjs_pages{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px}.pagedjs_page{color-scheme:light;background:white;box-shadow:0 2px 12px #00000026;flex-shrink:0}.pagedjs_pagebox{position:relative}#ps-loading{display:none}
   @media print{html,body{color-scheme:light;background:white!important}.pagedjs_pages{display:block!important;padding:0!important;zoom:1!important}.pagedjs_page{margin:0!important;box-shadow:none!important;break-after:page}.pagedjs_page:last-child{break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}#ps-loading{display:none}}
-  </style></head><body><div id="ps-loading">Preparing your pages…</div><div id="ps-output"></div><script>window.PRINT_STUDIO_JOB=${payload};</script><script>${FRAME_RUNTIME.replace(/<\/script/gi,'<\\/script')}</script></body></html>`;
+  </style></head><body>${printTemplates(createElement)}<div id="ps-loading">Preparing your pages…</div><div id="ps-output"></div><script>window.PRINT_STUDIO_JOB=${payload};</script><script>${FRAME_RUNTIME.replace(/<\/script/gi,'<\\/script')}</script></body></html>`;
 }

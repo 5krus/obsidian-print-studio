@@ -1,5 +1,6 @@
 import {writeFile} from 'node:fs/promises';
 import {NativePrinter,type DesktopBridge,type OutputRequest} from '../../src/native-print';
+export {defaults as formattingDefaults} from '../../src/settings';
 
 /** Real Electron output; only the filename dialog and physical submission are replaced. */
 export async function captureFormatting(desktop:DesktopBridge,request:OutputRequest,prefix:string) {

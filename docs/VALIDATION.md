@@ -1,5 +1,18 @@
 # Print Studio validation
 
+## 0.4.1 review compliance with unchanged output
+
+- All **59 unit tests**, TypeScript/build, packaging, and **four additional PDF/desktop-boundary tests bundled with the production PDF-Lib source build** pass. The latter run automatically in `npm run check`.
+- Strict ESLint with `--no-inline-config` and both reported rules set to errors reports **zero style or DOM-helper findings**. The previous file exemptions are removed. The built `main.js` contains none of `__awaiter`, `__generator` or `__spreadArray`.
+- All **37 browser/PDF tests** pass. Studio, text-preservation and reading-appearance reference PDFs have identical extracted text and byte-identical first-page PNGs to the saved 0.4.0 outputs. Custom CSS, exported HTML, preset controls, page furniture, page boundaries and embedded media remain covered.
+- **12 native formatting PDFs** pass in Obsidian 1.13.7 with Fast Text Color 1.1.12, across light/dark appearances and custom CSS, through Save PDF and captured Linux Print. All 12 have identical extracted text to 0.4.0. All six first-page native PNGs are byte-identical after fixing the lab's preset, header and footer inputs. The validator now starts from Essential and explicit text slots so prior lab edits and dates cannot alter the comparison.
+- **16 native baseline PDFs** pass across A4/Letter, portrait/landscape and regular/first-page letterheads, with page dimensions, counts and all content markers retained.
+- Temporary-file permissions and directory cleanup, rejected printer/copy inputs, cancellation without overwriting an existing PDF, and blocked print-window navigation are checked. The isolated iframe still receives no Obsidian globals or parent DOM access.
+
+Early browser attempts stalled under local memory pressure; the completed run passed after memory was freed. Physical printing was replaced by file capture, and the personal vault was not modified. Windows/macOS dialogs and physical printers remain manual checks. The public community score requires the directory's own scan; filesystem/process capability disclosures may remain.
+
+For a hands-on check after updating, open a representative study note, compare the three **Note appearance** modes, enable your custom CSS, then save a PDF and export HTML. Inspect highlights, page boundaries and the final paragraph in both files. Existing presets should keep their settings. More detailed steps are in [development and testing](DEVELOPMENT.md#check-the-formatting-output).
+
 ## 0.4.0 note appearance, custom CSS and preset management
 
 Usage, limitations and hands-on checks are in [the formatting guide](FORMATTING.md).

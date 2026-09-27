@@ -75,7 +75,7 @@ test('preservation carries only text styles and CSS cannot break out of the fram
   const output=frameDocument({html:original,formatting:{html:original,rootStyle:'color:rgb(230,230,230);font-size:16px;background-color:rgb(30,30,30)'},preset,context:{title:'Formatting',vault:'Test',date:'Today',metadata:{}}},'t');
   const payload=JSON.parse(output.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
   assert.doesNotMatch(payload.html,/style=|position|url\(/);assert.match(payload.html,/data-ps-format/);
-  assert.match(payload.contentCss,/color: rgb\(38, 39, 39\)/);assert.match(payload.contentCss,/font-weight: 800/);
+  assert.match(payload.contentCss,/color: #262727/);assert.match(payload.contentCss,/font-weight: 800/);
   assert.doesNotMatch(payload.contentCss,/position|background-image/);
   assert.equal((output.match(/<script>/g)??[]).length,2);
   preset.formatting='studio';preset.customCssEnabled=false;

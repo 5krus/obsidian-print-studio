@@ -1,6 +1,6 @@
 {
   "name": "obsidian-print-studio",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "package": "npm run check && node scripts/notices.mjs && node scripts/package.mjs",
     "test:browser": "npm run build && node scripts/build-tests.mjs && playwright test",
     "lint": "eslint src --max-warnings 0",
-    "check": "npm run lint && npm test && npm run build"
+    "test:bundle": "node scripts/test-pdf-build.mjs",
+    "check": "npm run lint && npm test && npm run build && npm run test:bundle"
   },
   "dependencies": {
     "dompurify": "^3.2.7",

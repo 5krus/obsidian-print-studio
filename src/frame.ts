@@ -1,5 +1,5 @@
 // Runs in a sandboxed iframe without Obsidian or access to the parent DOM.
-// Standard DOM creation here is intentional; do not add Obsidian globals.
+// The host supplies prepared content and inert templates made with Obsidian helpers.
 import {Previewer} from 'pagedjs';
 import {frameCommand} from './messages';
 import {pageCss, type PrintJob} from './document';
@@ -7,37 +7,15 @@ import {expandTemplate} from './template';
 import {paperSize} from './settings';
 import {layoutWarnings} from './layout-warnings';
 import {freezePageContent} from './page-snapshot';
-import {noteCssClasses} from './note-formatting';
 declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
 async function run() {
-  const source=document.createElement('div');source.className='ps-content markdown-rendered markdown-preview-view';
-  source.classList.add(...noteCssClasses(job.context.metadata.cssclasses));
-  // The parent serializes only cleanMarkup output into this network-isolated frame.
-  source.append(...new DOMParser().parseFromString(job.html,'text/html').body.childNodes);
-  if(job.preset.headingBreaks) {const headings=[...source.querySelectorAll('h1')];headings.slice(1).forEach(h=>h.classList.add('ps-heading-break'));}
-  for(const heading of source.querySelectorAll('h2,h3,h4,h5,h6')) {
-    const next=heading.nextElementSibling;
-    if(next?.tagName==='P' && (next.textContent?.length ?? 0)<900){const group=document.createElement('div');group.className='ps-keep-heading';heading.before(group);group.append(heading,next);}
-  }
+  const source=new DOMParser().parseFromString(job.html,'text/html').body.firstElementChild as HTMLElement;
+  // Capture trusted templates before paginating note content with arbitrary IDs.
+  const furniture=document.querySelector<HTMLTemplateElement>('body > #ps-page-furniture')!.content;
+  const lineBreak=document.querySelector<HTMLTemplateElement>('body > #ps-line-break')!.content.firstElementChild as HTMLBRElement;
   await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
-  source.querySelectorAll('input[type=checkbox]').forEach(input=>{const span=document.createElement('span');span.className='ps-check';span.textContent=(input as HTMLInputElement).checked?'☑\uFE0E':'☐';input.replaceWith(span);});
-  // Group the content after a spacer up to the next explicit break. Repeated
-  // spacers in the same section share its remaining space.
-  for(const marker of source.querySelectorAll('.ps-bottom-marker')) {
-    if(!source.contains(marker))continue;
-    const group=document.createElement('div');group.className='ps-bottom-block';
-    marker.before(group);
-    let next=marker.nextSibling;
-    marker.remove();
-    while(next) {
-      if(next.nodeType===1 && (next as Element).classList.contains('ps-page-break'))break;
-      const current=next;next=next.nextSibling;
-      if(current.nodeType===1 && (current as Element).classList.contains('ps-bottom-marker'))current.parentNode?.removeChild(current);
-      else group.append(current);
-    }
-  }
   const previewer=new Previewer();
   // Paged.js 0.4.3 normally waits for animation frames between pages. Electron
   // can stop those while the window is unfocused, leaving pagination stuck.
@@ -58,23 +36,27 @@ async function run() {
     const first=index===0 && job.preset.differentFirstPage;
     if(first)page.classList.add('ps-first-page');
     const box=page.querySelector('.pagedjs_pagebox')!;
-    const border=document.createElement('div');border.className='ps-page-border';box.append(border);
+    const decorations=furniture.cloneNode(true) as DocumentFragment;
     for(const location of ['header','footer'] as const) {
-      const band=document.createElement('div');band.className=`ps-page-${location}`;
+      const band=decorations.querySelector(`.ps-page-${location}`)!;
       for(const alignment of ['left','center','right'] as const) {
-        const slot=document.createElement('div');slot.className=`ps-slot ${alignment}`;
-        if(location==='header' && alignment==='left' && job.preset.logo && (index===0 || !job.preset.logoFirstPageOnly)) {const img=document.createElement('img');img.src=job.preset.logo;img.alt=job.preset.company || 'Company logo';img.className='ps-logo';slot.append(img);}
+        const slot=band.querySelector(`.ps-slot.${alignment}`)!;
+        const img=slot.querySelector('img');
+        if(img) {
+          if(job.preset.logo && (index===0 || !job.preset.logoFirstPageOnly)) {img.src=job.preset.logo;img.alt=job.preset.company || 'Company logo';}
+          else img.remove();
+        }
         const slots=location==='header' && first?job.preset.firstPageHeader:job.preset[location];
         const uppercase=location==='header' && first?job.preset.firstPageHeaderUppercase:job.preset[`${location}Uppercase`];
         const expanded=expandTemplate(slots[alignment],job.context,job.preset.company,index+1,all.length);
-        const text=document.createElement('span');text.textContent=uppercase[alignment]?expanded.toUpperCase():expanded;slot.append(text);band.append(slot);
+        slot.querySelector('span')!.textContent=uppercase[alignment]?expanded.toUpperCase():expanded;
       }
-      box.append(band);
     }
+    box.append(decorations);
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   await document.fonts.ready;
-  freezePageContent(all);
+  freezePageContent(all,lineBreak);
   // Move only into unused space after pagination, without changing page count
   // or splitting a fitting cover. Oversized sections retain normal pagination.
   for(const page of all) {
@@ -119,7 +101,7 @@ async function run() {
     if(message.type==='export' || message.type==='pdf' || message.type==='print'){
       // Export at actual size, regardless of the current preview magnification.
       const clone=document.documentElement.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('script').forEach(script=>script.remove());
+      clone.querySelectorAll('script,body > template#ps-page-furniture,body > template#ps-line-break').forEach(element=>element.remove());
       // A legal CSS string can contain </style>. Escape it before serializing
       // style text as HTML so a font name or selector cannot inject markup.
       clone.querySelectorAll('style').forEach(style=>{style.textContent=(style.textContent??'').replace(/</g,'\\3c ');});

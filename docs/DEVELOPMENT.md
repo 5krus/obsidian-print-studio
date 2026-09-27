@@ -13,7 +13,7 @@ npm ci
 npm run check
 ```
 
-This runs lint, unit tests, TypeScript checks and the plugin build. To watch plugin-source changes, run `npm run dev`; restart it after changes to the print-frame runtime.
+This runs lint, unit tests, TypeScript checks, the plugin build, and PDF/desktop-boundary tests bundled with the production PDF-Lib source build. To watch plugin-source changes, run `npm run dev`; restart it after changes to the print-frame runtime.
 
 Browser/PDF checks require Chromium, Poppler (`pdfinfo`, `pdftotext`, `pdftoppm`) and Ghostscript:
 

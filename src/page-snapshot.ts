@@ -12,7 +12,7 @@ function endsWithBreak(node:Node):boolean {
   return false;
 }
 
-export function freezePageContent(pages:HTMLElement[]):void {
+export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement):void {
   const changes:Array<{block:HTMLElement;lines:DocumentFragment[]}>=[];
   for(const page of pages) {
     for(const block of page.querySelectorAll<HTMLElement>(`.pagedjs_page_content :is(${textBlocks})`)) {
@@ -62,7 +62,7 @@ export function freezePageContent(pages:HTMLElement[]):void {
     lines.forEach((line,index)=>{
       const explicitBreak=endsWithBreak(line);
       block.append(line);
-      if(index<lines.length-1 && !explicitBreak)block.append(block.ownerDocument.createElement('br'));
+      if(index<lines.length-1 && !explicitBreak)block.append(lineBreak.cloneNode());
     });
   }
   for(const page of pages)for(const content of page.querySelectorAll<HTMLElement>('.pagedjs_page_content')) {

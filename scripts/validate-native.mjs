@@ -1,10 +1,11 @@
 import {build} from 'esbuild';
+import {modernPdfLib} from './pdf-lib-build.mjs';
 import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,rm} from 'node:fs/promises';
 import {resolve,dirname,join} from 'node:path';
 import assert from 'node:assert/strict';
 const fixture=resolve('build/native-validation.cjs'),results=resolve('test-results');
-await build({entryPoints:['tests/native/fixture.ts'],bundle:true,platform:'node',format:'cjs',outfile:fixture});
+await build({entryPoints:['tests/native/fixture.ts'],bundle:true,platform:'node',format:'cjs',target:'es2022',outfile:fixture,plugins:[modernPdfLib]});
 const resultFile=join(results,'native-validation-result.json');
 await rm(resultFile,{force:true});
 const code=`delete require.cache[require.resolve(${JSON.stringify(fixture)})];require(${JSON.stringify(fixture)}).validate(require('electron').remote,${JSON.stringify(results)}).then(paths=>require('node:fs').writeFileSync(${JSON.stringify(resultFile)},JSON.stringify({paths}))).catch(error=>require('node:fs').writeFileSync(${JSON.stringify(resultFile)},JSON.stringify({error:String(error)})))`;

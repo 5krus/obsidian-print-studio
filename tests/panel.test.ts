@@ -35,10 +35,10 @@ test('a newer refresh wins over pending source reads and failed reads can be ret
     await tick();const shared=panel.render();await tick();assert.equal(pending.length,1);
     const fresh=panel.render(true);await tick();assert.equal(pending.length,2);
     pending[1].resolve({...source,html:'<p>Fresh</p>'});await fresh;
-    pending[0].resolve({...source,html:'<p>Stale</p>'});await shared;assert.equal(job().html,'<p>Fresh</p>');
+    pending[0].resolve({...source,html:'<p>Stale</p>'});await shared;assert.equal(new dom.window.DOMParser().parseFromString(job().html,'text/html').body.firstElementChild!.innerHTML,'<p>Fresh</p>');
     const failed=panel.render(true);await tick();pending[2].reject(new Error('Read failed'));await failed;
     const retry=panel.render();await tick();assert.equal(pending.length,4);pending[3].resolve(source);await retry;
-    assert.equal(job().html,source.html);
+    assert.equal(new dom.window.DOMParser().parseFromString(job().html,'text/html').body.firstElementChild!.innerHTML,source.html);
   }finally{panel.dispose();}
 });
 

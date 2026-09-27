@@ -24,7 +24,11 @@ test('desktop output uses the selected paper and cleans up on success, cancellat
       executeJavaScript:async()=>undefined,
       printToPDF:async(options:ReturnType<typeof pdfOptions>)=>{pdfCalls.push(options);return fixturePDF({...defaults().presets[0],paper:options.pageSize,orientation:options.landscape?'landscape':'portrait'});},
       print:(options:unknown,callback:(success:boolean,reason:string)=>void)=>{printCalls.push(options);callback(!printCanceled,printCanceled?'Print job canceled':'');},
-      setWindowOpenHandler:()=>{},on:()=>{},
+      setWindowOpenHandler:(handler:()=>{action:'deny'})=>{assert.deepEqual(handler(),{action:'deny'});},
+      on:(event:'will-navigate',handler:(event:{preventDefault():void})=>void)=>{
+        assert.equal(event,'will-navigate');
+        let prevented=false;handler({preventDefault:()=>{prevented=true;}});assert.equal(prevented,true);
+      },
     };
   }
   const desktop:DesktopBridge={BrowserWindow:Window,dialog:{showSaveDialog:async()=>({canceled,filePath:path})}};
@@ -39,7 +43,9 @@ test('desktop output uses the selected paper and cleans up on success, cancellat
       assert.deepEqual(printCalls.at(-1),{silent:false,pageSize:paper,landscape:orientation==='landscape',scaleFactor:100,printBackground:true,margins:{marginType:'none'},header:'',footer:''});
     }
     const request={kind:'pdf' as const,title:'Test',html:'<p>Test</p>',preset:defaults().presets[0]};
+    const savedBytes=await readFile(path);
     canceled=true;await printer.output(request);assert.equal(created,8);
+    assert.deepEqual(await readFile(path),savedBytes,'Cancel must leave the existing output untouched');
     canceled=false;fail=true;await assert.rejects(printer.output(request),/Load failed/);
     fail=false;printCanceled=true;await printer.output({...request,kind:'print'});
     assert.equal(created,destroyed);

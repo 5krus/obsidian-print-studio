@@ -56,12 +56,24 @@ export function compileContentCss(css:string):string {
   return output.join('\n');
 }
 
-/** Rebuild declarations from a finite list; do not trust style attributes. */
-export function filterTextStyle(style:CSSStyleDeclaration,target:CSSStyleDeclaration):void {
+/** Export data, kept separate from DOM styling. Only validated text values enter. */
+export function textStyleDeclarations(style:CSSStyleDeclaration):Map<string,string> {
+  const declarations=new Map<string,string>();
   for(const property of TEXT_PROPERTIES) {
     const value=style.getPropertyValue(property);
     if(!value)continue;
-    try {if(safeValue(parse(value,{context:'value',onParseError:error=>{throw error;}})))target.setProperty(property,value);}
+    try {if(safeValue(parse(value,{context:'value',onParseError:error=>{throw error;}})))declarations.set(property,value);}
     catch { /* Invalid or unsupported formatting is omitted. */ }
   }
+  return declarations;
+}
+
+/** Only serialize declarations returned by textStyleDeclarations or internal defaults. */
+export function serializeTextStyle(declarations:ReadonlyMap<string,string>):string {
+  return [...declarations].map(([property,value])=>`${property}: ${value};`).join(' ');
+}
+
+/** Rebuild declarations from a finite list; do not trust style attributes. */
+export function filterTextStyle(style:CSSStyleDeclaration,target:CSSStyleDeclaration):void {
+  for(const [property,value] of textStyleDeclarations(style))target.setProperty(property,value);
 }
