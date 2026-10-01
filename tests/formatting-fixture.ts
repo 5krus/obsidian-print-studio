@@ -7,7 +7,12 @@ export const formattingCss=`
 .formatting-test h1 { font-size:2em; }
 .formatting-test p { margin:0 0 1em; }
 .formatting-test .markdown-embed-content { color:rgb(100,30,180); font-size:18px; font-family:serif; }
+.formatting-test .ftc-color-default-red { color:rgb(233,0,100); background-color:rgb(248,231,237); font-family:"Times New Roman",serif; font-size:1.2em; }
 `;
+export const paragraphFormattingHtml=`<h1>PARAGRAPH-FORMATTING</h1>
+<p class="colored-paragraph"><span class="ftc-color-default-red">${'Every line of a colored paragraph should keep its font, highlight and color. '.repeat(7)}Short final line.</span></p>
+<p class="colored-paragraph"><span class="ftc-color-default-red">Explicit break.<br><br>${'A wrapped segment after a blank line keeps natural spacing. '.repeat(5)}End segment.</span></p>
+<p class="colored-paragraph"><span class="ftc-color-default-red">${Array.from({length:80},(_,i)=>`PARA-${String(i).padStart(3,'0')} ${'Long highlighted passages must retain every word across page boundaries. '.repeat(2)}`).join('')}LAST-PARAGRAPH-WORD.</span></p>`;
 export const formattingHtml=`<h1>FORMATTING-CHECK</h1>
 <p>PLAIN-CHECK <strong>BOLD-CHECK</strong> <em>ITALIC-CHECK</em></p>
 <p><span class="fast-text-color-study">PLUGIN-CHECK</span> <mark>HIGHLIGHT-CHECK</mark></p>

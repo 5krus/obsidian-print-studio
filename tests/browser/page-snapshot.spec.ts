@@ -7,6 +7,53 @@ const setup=async(page:import('@playwright/test').Page,body:string)=>{
   await page.addStyleTag({content:'body{margin:0;font:12px/18px Arial,sans-serif}p{margin:0}.pagedjs_page{width:700px;height:900px;overflow:hidden}.pagedjs_page_content{width:360px;column-width:360px;column-fill:auto;column-gap:1000px}'});
 };
 
+// Measure real glyphs rather than just checking that the original text exists.
+function words(root:HTMLElement) {
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),range=document.createRange();
+  const result:Array<{text:string;x:number;y:number;width:number;color:string;background:string;font:string}>=[];
+  let node:Node|null;
+  while((node=walker.nextNode()))for(const word of (node.textContent??'').matchAll(/\S+/gu)) {
+    range.setStart(node,word.index);range.setEnd(node,word.index+word[0].length);
+    const rect=range.getBoundingClientRect(),style=getComputedStyle(node.parentElement!);
+    result.push({text:word[0],x:rect.x,y:rect.y,width:rect.width,color:style.color,background:style.backgroundColor,font:style.font});
+  }
+  return result;
+}
+
+test('whole-paragraph inline formatting survives every frozen line',async({page},info)=>{
+  await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p><span class="ftc-colored" style="color:#e90064;background-color:#f8e7ed;font:18px/1.5 Georgia,serif"><em>${'Long colored paragraphs must retain the same formatting on every wrapped line. '.repeat(7)}</em></span></p></div></div>`);
+  const block=page.locator('p');const before=await block.evaluate(words);
+  expect(new Set(before.map(word=>word.y)).size).toBeGreaterThan(3);
+  await page.screenshot({path:info.outputPath('paragraph-before-freeze.png')});
+  await page.evaluate(()=>window.freezeSnapshot());
+  await page.screenshot({path:info.outputPath('paragraph-after-freeze.png')});
+  const after=await block.evaluate(words);
+  expect(after.map(({text,color,font})=>({text,color,font}))).toEqual(before.map(({text,color,font})=>({text,color,font})));
+  after.forEach((word,index)=>{expect(Math.abs(word.x-before[index].x)).toBeLessThan(1);expect(Math.abs(word.y-before[index].y)).toBeLessThan(1);});
+});
+
+test('justification preserves soft-line spacing and leaves the final and explicit-break lines natural',async({page},info)=>{
+  await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p style="text-align:justify">${'Natural justified text has evenly aligned edges and ordinary final lines. '.repeat(4)}Short end.<br>Explicit short line.<br>${'Another paragraph segment should retain its justified wrapping. '.repeat(3)}Final words.</p></div></div>`);
+  const block=page.locator('p');const before=await block.evaluate(words);
+  await page.screenshot({path:info.outputPath('justified-before-freeze.png')});
+  await page.evaluate(()=>window.freezeSnapshot());
+  await page.screenshot({path:info.outputPath('justified-after-freeze.png')});
+  const after=await block.evaluate(words);
+  expect(after.map(word=>word.text)).toEqual(before.map(word=>word.text));
+  after.forEach((word,index)=>{expect(Math.abs(word.x-before[index].x)).toBeLessThan(1);expect(Math.abs(word.y-before[index].y)).toBeLessThan(1);});
+});
+
+test('page continuations justify the last soft wrap but leave explicit breaks natural',async({page})=>{
+  await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p data-split-to="continued" style="text-align:justify;text-align-last:justify">Short explicit line.<br><br>${'A paragraph can continue on another page. '.repeat(3)}More words</p></div></div>`);
+  await page.evaluate(()=>window.freezeSnapshot());
+  const lines=page.locator('.ps-fixed-line');
+  const ratios=await lines.evaluateAll(elements=>elements.map(element=>{
+    const range=document.createRange();range.selectNodeContents(element);
+    return range.getBoundingClientRect().width/element.getBoundingClientRect().width;
+  }));
+  expect(ratios[0]).toBeLessThan(.5);expect(ratios.at(-1)).toBeGreaterThan(.99);
+});
+
 test('finished line breaks survive a new output window without losing the final amount to an overflow column',async({page,browser},testInfo)=>{
   await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p>${'Consistent preview and output protect every word. '.repeat(8)}The reporting threshold is <strong style="white-space:nowrap">$200M in ARR.</strong></p></div></div>`);
   const paragraph=page.locator('p');
