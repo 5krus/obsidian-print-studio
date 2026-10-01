@@ -1,6 +1,6 @@
 # Print Studio validation
 
-## Unreleased: whole-paragraph formatting and justification (#1)
+## 0.4.2 whole-paragraph formatting and justification (#1)
 
 - Reproduced the lost middle-line font/color with nested inline spans. The original snapshot code also discarded justification when converting soft wraps to explicit breaks.
 - Snapshots now retain inline formatting ancestors. Justified lines preserve soft-wrap spacing, including page continuations, while explicit breaks and paragraph endings retain natural spacing. First-line indentation and print margins remain covered.
