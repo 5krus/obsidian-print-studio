@@ -7,6 +7,7 @@ import {expandTemplate} from './template';
 import {paperSize} from './settings';
 import {layoutWarnings} from './layout-warnings';
 import {freezePageContent} from './page-snapshot';
+import {sizeTables} from './table-layout';
 declare global {interface Window {PRINT_STUDIO_JOB:PrintJob & {token:string}}}
 const job=window.PRINT_STUDIO_JOB;
 const send=(type:string, extra:Record<string,unknown>={})=>parent.postMessage({type,token:job.token,...extra},'*');
@@ -17,6 +18,12 @@ async function run() {
   const lineBreak=document.querySelector<HTMLTemplateElement>('body > #ps-line-break')!.content.firstElementChild as HTMLBRElement;
   const lineBox=document.querySelector<HTMLTemplateElement>('body > #ps-line-box')!.content.firstElementChild as HTMLElement;
   await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
+  // Measure at the printed content width, independent of the device viewport.
+  const measurementStyle=document.querySelector('#ps-measurement-style')!;
+  const measurement=document.querySelector<HTMLElement>('#ps-measurement')!;
+  measurement.style.width=`${paperSize(job.preset)[0]-2*job.preset.marginSide}mm`;
+  measurement.append(source);
+  try {await document.fonts.ready;sizeTables(source);}finally{source.remove();measurement.remove();measurementStyle.remove();}
   const previewer=new Previewer();
   // Paged.js 0.4.3 normally waits for animation frames between pages. Electron
   // can stop those while the window is unfocused, leaving pagination stuck.

@@ -1,5 +1,13 @@
 # Print Studio validation
 
+## 0.4.4 consistent table columns
+
+- Reproduced a two- and three-column table layout difference between Chromium and WebKit with identical content and presets. Native automatic table sizing compressed the label columns differently; freezing line breaks could change column widths again.
+- The shared sizing step measures intrinsic cell widths at the printed content width, distributes available space, and records widths on every row before pagination. Per-row widths survive Paged.js continuation pages, which omit colgroups. Long unbroken content stays within the page; authored widths and complex table structures retain the existing behavior.
+- The two rendering engines produce matching column widths within a fraction of a CSS pixel for the reproduction. The committed regression uses synthetic content and covers 60 numbered rows across multiple pages, narrow windows, long unbroken text, and exported HTML geometry.
+- Lint, 61 unit tests, TypeScript/build, four production-bundled PDF/desktop tests, and the mobile bundle smoke pass. Browser validation covers 49 Chromium tests and seven WebKit mobile/table tests.
+- Native Save PDF passed in an isolated Obsidian vault with existing presets and Fast Text Color formatting. Physical Vision Pro and printer checks remain untested.
+
 ## 0.4.3 mobile and Vision Pro compatibility
 
 - Lint, **61 unit tests**, TypeScript/build and **four production-bundled PDF/desktop tests** pass. The shipped plugin also loads, enables and enters its mobile PDF path in a VM with no Node/Electron access, `process` or `Buffer`.

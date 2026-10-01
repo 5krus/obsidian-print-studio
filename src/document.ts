@@ -42,6 +42,7 @@ export function cleanMarkup(html:string,createElement:ElementFactory,hideEmbedde
 export function pageCss(preset: Preset): string {
   const p=normalizePreset(preset), [w,h]=paperSize(p);
   return `@page {size:${w}mm ${h}mm;margin:${p.marginTop}mm ${p.marginSide}mm ${p.marginBottom}mm;}
+  .ps-sized-table{table-layout:fixed}
   .ps-fixed-lines{white-space:nowrap}.pagedjs_page_content.ps-fixed-page{column-width:auto!important;column-count:auto!important;column-gap:normal!important}
   .ps-fixed-lines>.ps-fixed-line{all:unset;display:block;white-space:nowrap;text-align-last:auto}.ps-fixed-lines>.ps-fixed-line:not(:first-child){text-indent:0}.ps-fixed-lines>.ps-justify-line{text-align-last:justify}
   ${p.differentFirstPage?`@page :first {margin-top:${p.firstPageMarginTop}mm;}`:''}
@@ -65,5 +66,11 @@ export function frameDocument(job: PrintJob, token: string, createElement: Eleme
   return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' blob:; img-src data:; font-src data:; connect-src 'none';"><title>${escapeHtml(job.context.title)} — Print Studio</title><style data-pagedjs-ignore>
   :root{color-scheme:${colorScheme==='dark'?'dark':'light'}}html,body{background:transparent;margin:0}.pagedjs_pages{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px}.pagedjs_page{color-scheme:light;background:white;box-shadow:0 2px 12px #00000026;flex-shrink:0}.pagedjs_pagebox{position:relative}#ps-loading{display:none}
   @media print{html,body{color-scheme:light;background:white!important}.pagedjs_pages{display:block!important;padding:0!important;zoom:1!important}.pagedjs_page{margin:0!important;box-shadow:none!important;break-after:page}.pagedjs_page:last-child{break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}#ps-loading{display:none}}
-  </style></head><body>${printTemplates(createElement)}<div id="ps-loading">Preparing your pages…</div><div id="ps-output"></div><script>window.PRINT_STUDIO_JOB=${payload};</script><script>${FRAME_RUNTIME.replace(/<\/script/gi,'<\\/script')}</script></body></html>`;
+  </style><style id="ps-measurement-style" data-pagedjs-ignore>${(pageCss(preset)+'\n'+contentCss).replace(/</g,'\\3c ')}
+  #ps-measurement{position:absolute;visibility:hidden;left:0;top:0}
+  .ps-table-probe,.ps-table-probe>thead,.ps-table-probe>tbody,.ps-table-probe>tfoot,.ps-table-probe tr{display:block}
+  .ps-table-probe{width:100%;table-layout:auto}
+  .ps-table-probe :is(td,th){display:block;width:max-content;max-width:none;min-width:0;overflow-wrap:normal}
+  .ps-table-probe :is(td,th).ps-measure-min{width:min-content}
+  </style></head><body><div id="ps-measurement"></div>${printTemplates(createElement)}<div id="ps-loading">Preparing your pages…</div><div id="ps-output"></div><script>window.PRINT_STUDIO_JOB=${payload};</script><script>${FRAME_RUNTIME.replace(/<\/script/gi,'<\\/script')}</script></body></html>`;
 }

@@ -16,6 +16,8 @@ const pen=diagram.getContext('2d')!;pen.strokeStyle='black';pen.lineWidth=20;pen
 const figureHtml=embeddedFigureHtml(diagram.toDataURL('image/png'));
 const settings=defaults();
 const preset=settings.presets[0];
+const tableRows=Array.from({length:60},(_,i)=>`<tr><td>${i+1}.</td><td>${['Project organisers','Product users','Our employees','Local communities'][i%4]}</td><td>TABLE-ROW-${i} ${'Clear descriptions explain the responsibilities and priorities for each group. '.repeat(2)}</td></tr>`).join('');
+const tableHtml=`<table><tbody>${tableRows}</tbody></table><table><tr><td>Reference</td><td>${'LONGREFERENCE'.repeat(80)}</td></tr></table>`;
 preset.paper=query.get('paper')==='Letter'?'Letter':'A4';
 preset.orientation=query.get('orientation')==='landscape'?'landscape':'portrait';
 preset.company='Print Studio test';
@@ -25,6 +27,7 @@ preset.footer.left='PRINT-CHECK FOOTER';
 preset.footer.center='{{company}}';
 preset.footer.right='{{page}} / {{pages}}';
 preset.logo=TEST_IMAGE;
+if(query.has('tables')){preset.fontSize=9;preset.marginSide=15;}
 if(query.has('figure')){preset.fontSize=9;preset.lineHeight=1.55;preset.marginTop=27;preset.marginBottom=27;preset.marginSide=15;preset.hideEmbeddedNoteMetadata=true;}
 if(query.has('firstPage')) {
   preset.differentFirstPage=true;preset.firstPageMarginTop=55;preset.firstPageLogoHeight=25;preset.logoFirstPageOnly=true;
@@ -49,7 +52,7 @@ if(query.has('formatting')) {
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,mobileOutput:query.has('mobile'),
-  source:async()=>{window.testReads++;return {formatting:query.has('formatting')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('formatting')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;return {formatting:query.has('formatting')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('tables')?tableHtml:query.has('formatting')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   output:async request=>{window.testOutput=request;if(query.has('mobile')){const printer=new MobilePrinter(document.body,browserUI.createElement,async (data,title,open)=>{window.testMobilePDF=Array.from(data);window.testMobileSaved={title,open};});try{const output=printer.output(request);if(query.has('cancelMobile'))printer.dispose();await output;}finally{printer.dispose();}}},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
