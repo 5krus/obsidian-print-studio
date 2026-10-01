@@ -4,7 +4,7 @@ Turn your Obsidian notes into polished PDFs and printed pages. Add a letterhead,
 
 **[Open in Obsidian](https://obsidian.md/plugins?id=print-studio)** · [Quick guide](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md) · [What’s new](https://github.com/5krus/obsidian-print-studio/releases/latest)
 
-Free · Desktop Obsidian 1.13.0+ · No account required
+Free · Obsidian 1.13.0+ · Desktop and mobile · No account required
 
 ![Print Studio in Obsidian: page settings on the left and a paginated study note on the right, with Save PDF in the header.](https://raw.githubusercontent.com/5krus/obsidian-print-studio/main/docs/print-studio-dark.png)
 
@@ -39,6 +39,8 @@ Choose **Content → Note appearance → Preserve text formatting** to keep supp
 | **Save PDF** | A PDF using your selected paper size and orientation. |
 | **Print** | Send the pages to a printer. |
 | **Export HTML** | A self-contained document you can open in a browser. |
+
+On mobile, including Obsidian on Apple Vision Pro, **Save PDF** saves into **Print Studio Exports** in your vault. **Open PDF** saves and opens the file so you can share it or print from a supported app. Mobile PDFs contain page images, so text is not selectable; check complex styling before sharing. HTML and preset exports also save into that vault folder. Desktop output keeps selectable text and native printing.
 
 Use **Refresh note** after editing the note, changing its theme or updating a snippet. Preview zoom does not change the output size.
 

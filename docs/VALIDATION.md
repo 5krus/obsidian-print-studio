@@ -1,5 +1,15 @@
 # Print Studio validation
 
+## 0.4.3 mobile and Vision Pro compatibility
+
+- Lint, **61 unit tests**, TypeScript/build and **four production-bundled PDF/desktop tests** pass. The shipped plugin also loads, enables and enters its mobile PDF path in a VM with no Node/Electron access, `process` or `Buffer`.
+- All **48 Chromium browser/PDF tests** pass, covering desktop exports and six mobile cases. All **six mobile cases also pass in WebKit 26.6** on Linux ARM64: A4/Letter portrait/landscape, nonblank page images and border pixels on every page, a longer note exported at 150% zoom, and cancellation without a partial save. Narrow layouts use touch-capable WebKit.
+- The initial html2canvas wrapper stalled in WebKit because its nested `document.write` frame lost its origin. The final adapter reads the inert snapshot directly, without enabling scripts.
+- A second WebKit-specific regression removed later-page decorations when finished canvases were resized to zero. Releasing them as 1×1 canvases fixes it; per-page border pixel assertions protect against recurrence.
+- Inspected a seven-page WebKit PDF, including its first and final pages. OCR of the rendered PDF retains the first/final table rows and END-OF-DOCUMENT marker. PDF dimensions are A4; it contains no JavaScript. Mobile output is deliberately rasterized, with no selectable text.
+- HTML/preset exports use the vault host; tests cover write errors, filename safety, binary slices and preserving existing exports. Desktop native-output unit/bundle tests pass; desktop source printing behavior is unchanged.
+- A physical Vision Pro, Obsidian's mobile installation/file-sharing UI and physical printer submission remain **untested**. WebKit browser coverage is not device certification.
+
 ## 0.4.2 whole-paragraph formatting and justification (#1)
 
 - Reproduced the lost middle-line font/color with nested inline spans. The original snapshot code also discarded justification when converting soft wraps to explicit breaks.

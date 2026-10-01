@@ -78,6 +78,10 @@ These markers do not print. In the note editor, they stay hidden until you move 
 
 Wait for **Ready to print**, then choose **Save PDF**, **Print** or **Export HTML**.
 
+On mobile and Apple Vision Pro, **Open PDF** replaces **Print**. **Save PDF** saves in the vault's **Print Studio Exports** folder; **Open PDF** also opens the saved file. Print Studio closes to reveal the PDF; use the file menu to share it or print from an app that supports printing. Existing exports are kept, with numbered filenames for later copies. HTML and preset backups save into the same folder.
+
+Mobile PDFs contain high-resolution page images rather than selectable text. Some complex CSS may render differently, so inspect the saved PDF before sharing. Use desktop export when you need selectable text. Your presets and logos work on both platforms.
+
 - **Save PDF** uses the selected paper size and orientation. Preview zoom has no effect on the saved page size.
 - **Print** opens printer selection. On Linux, select the printer and copies inside Obsidian; a configured CUPS printer is required. On Windows and macOS, use the system print dialog.
 - **Export HTML** creates a self-contained document. Open it in a desktop Chromium-based browser to view or print it.

@@ -1,6 +1,6 @@
 # Community releases
 
-Print Studio is published in Obsidian's community directory. Users can install and update it through **Settings → Community plugins**. It is an independent, free desktop plugin under the MIT license.
+Print Studio is published in Obsidian's community directory. Users can install and update it through **Settings → Community plugins**. It is an independent, free desktop and mobile plugin under the MIT license.
 
 The plugin ID is `print-studio`, the repository is `5krus/obsidian-print-studio`, and the minimum Obsidian version is `1.13.0`. Release tags use the manifest version without a `v` prefix.
 

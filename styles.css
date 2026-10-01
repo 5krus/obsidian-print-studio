@@ -141,3 +141,10 @@
 .ps-warning-list summary { cursor: pointer; font-weight: var(--font-semibold); }
 .ps-warning { display: flex; align-items: baseline; gap: var(--size-4-2); margin-top: var(--size-4-2); }
 .ps-warning span { overflow-wrap: anywhere; }
+
+/* Keep the inert mobile export document laid out without covering the studio. */
+.ps-mobile-output { position: fixed; left: -20000px; top: 0; border: 0; pointer-events: none; }
+@media (max-width: 650px) {
+  .ps-actions { flex-wrap: wrap; }
+  .ps-actions button { min-height: 40px; }
+}

@@ -1,6 +1,6 @@
 import {build,context} from 'esbuild';
 import {modernPdfLib} from './pdf-lib-build.mjs';
-const runtime=await build({entryPoints:['src/frame.ts'],bundle:true,write:false,format:'iife',platform:'browser',target:'chrome110',minify:true});
+const runtime=await build({entryPoints:['src/frame.ts'],bundle:true,write:false,format:'iife',platform:'browser',target:['chrome110','safari16.4'],minify:true});
 const define={FRAME_RUNTIME:JSON.stringify(runtime.outputFiles[0].text)};
 const config={entryPoints:['src/main.ts'],bundle:true,external:['obsidian','electron','@codemirror/state','@codemirror/view'],format:'cjs',platform:'node',target:'es2022',outfile:'main.js',define,minify:true,plugins:[modernPdfLib]};
 await build(config);

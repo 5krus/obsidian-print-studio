@@ -3,6 +3,7 @@ import {formattingCss,formattingHtml,paragraphFormattingHtml} from '../formattin
 import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml,inlineEmbeddedNote,embeddedFigureHtml} from '../fixtures';
 import {serializeRenderedNote} from '../../src/rendered-note';
 import {marked} from 'marked';
+import {MobilePrinter} from '../../src/mobile-printer';
 import {StudioPanel} from '../../src/panel';
 import {defaults} from '../../src/settings';
 import {prepareMarkdown} from '../../src/template';
@@ -47,12 +48,12 @@ if(query.has('formatting')) {
 }
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
-  ui:browserUI,settings,
+  ui:browserUI,settings,mobileOutput:query.has('mobile'),
   source:async()=>{window.testReads++;return {formatting:query.has('formatting')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('formatting')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
-  output:async request=>{window.testOutput=request;},
+  output:async request=>{window.testOutput=request;if(query.has('mobile')){const printer=new MobilePrinter(document.body,browserUI.createElement,async (data,title,open)=>{window.testMobilePDF=Array.from(data);window.testMobileSaved={title,open};});try{const output=printer.output(request);if(query.has('cancelMobile'))printer.dispose();await output;}finally{printer.dispose();}}},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
 });
-declare global {interface Window {testOutput:import('../../src/native-print').OutputRequest;testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;testReads:number;}}
+declare global {interface Window {testMobilePDF:number[];testMobileSaved:{title:string;open:boolean};testOutput:import('../../src/native-print').OutputRequest;testPanel:StudioPanel;testSaved:unknown;testNotices:string[];testExport:string;testPages:number;testReads:number;}}
 window.testPanel=panel;window.testNotices=[];
 window.addEventListener('message',event=>{if(event.data?.type==='exported')window.testExport=event.data.html;if(event.data?.type==='ready')window.testPages=event.data.pages;});

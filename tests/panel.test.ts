@@ -14,6 +14,22 @@ const presetAction=(name:string)=>{if(!document.querySelector('[role=menu]'))but
 const job=()=>JSON.parse(document.querySelector('iframe')!.srcdoc.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
 const send=(data:Record<string,unknown>)=>window.dispatchEvent(new dom.window.MessageEvent('message',{source:document.querySelector('iframe')!.contentWindow,data:{token:job().token,...data}}));
 
+test('mobile HTML and preset exports use the vault host and report write failures',async()=>{
+  const exports:Array<{name:string;content:string}>=[],notices:string[]=[];
+  const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),mobileOutput:true,source:async()=>source,save:async()=>{},notify:m=>notices.push(m),
+    exportFile:async(content,name)=>{exports.push({name,content});if(exports.length===3)throw new Error('Storage full');}});
+  try {
+    await tick();send({type:'ready',pages:1});
+    assert.ok(button('Open PDF'));assert.equal(document.querySelector('[aria-label="Print"]'),null);
+    send({type:'exported',html:'<html>Export</html>'});await tick();
+    assert.equal(exports[0].name,'Note — Print Studio.html');
+    assert.equal(exports[0].content,'<html>Export</html>');
+    presetAction('Export all presets').click();await tick();
+    assert.equal(exports[1].name,'Print Studio presets.json');assert.doesNotThrow(()=>JSON.parse(exports[1].content));
+    send({type:'exported',html:'failed'});await tick();assert.match(notices.at(-1)!,/Storage full/);
+  }finally{panel.dispose();}
+});
+
 test('layout edits reuse the note, preserve the page, and clamp after pagination shrinks',async()=>{
   let reads=0;
   const panel=new StudioPanel(document.querySelector('#root')!,{ui:browserUI,settings:defaults(),source:async()=>{reads++;return source;},save:async()=>{},notify:()=>{}});

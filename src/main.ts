@@ -1,7 +1,8 @@
-import {Component, getLinkpath, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
-import {remote} from 'electron';
-import {LinuxPrintDialog} from './linux-print-dialog';
-import {NativePrinter} from './native-print';
+import {arrayBufferToBase64, Platform, Component, getLinkpath, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, TFile, type SettingDefinitionItem} from 'obsidian';
+import type {DesktopPrinter} from './desktop-printer';
+import type {MobilePrinter} from './mobile-printer';
+import {saveVaultExport} from './vault-export';
+import type {OutputRequest} from './native-print';
 import {pageBreakEditor} from './page-break-editor';
 import {StudioPanel} from './panel';
 import {obsidianUI} from './obsidian-ui';
@@ -42,18 +43,50 @@ class PrintSettings extends PluginSettingTab {
 }
 class PrintModal extends Modal {
   private panel?:StudioPanel;
-  private printDialog?:LinuxPrintDialog;
-  private printer=new NativePrinter(remote,async(data,request)=>{
-    const dialog=new LinuxPrintDialog(this.app);this.printDialog=dialog;
-    try {await dialog.print(data,request);}finally{if(this.printDialog===dialog)this.printDialog=undefined;}
-  });
+  private printer?:DesktopPrinter|MobilePrinter;
+  private async output(request:OutputRequest) {
+    if(this.isClosed)return;
+    if(!this.printer) {
+      if(Platform.isDesktopApp) {
+        const {DesktopPrinter}=await import('./desktop-printer');
+        if(this.isClosed)return;
+        this.printer=new DesktopPrinter(this.app);
+      } else {
+        const {MobilePrinter}=await import('./mobile-printer');
+        if(this.isClosed)return;
+        this.printer=new MobilePrinter(this.contentEl,obsidianUI(this.app).createElement,async (data,title,open)=>{
+          const file=await saveVaultExport(this.app.vault,`${title}.pdf`,data);
+          new Notice(`PDF saved to ${file.path}. Open it to share or print where supported.`,8000);
+          if(open && !this.isClosed){await this.app.workspace.getLeaf(false).openFile(file);this.close();}
+        });
+      }
+    }
+    await this.printer.output(request);
+  }
   private component=new Component();
   private renderRoot?:HTMLElement;
   private renderQueue=Promise.resolve();
   private renderComponent?:Component;
   private isClosed=false;
   constructor(private plugin:PrintStudioPlugin,private file:TFile,private closed:()=>void){super(plugin.app);}
-  onOpen(){this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();this.renderRoot=this.contentEl.createDiv({cls:'markdown-reading-view'}).createDiv({cls:'ps-render-source markdown-preview-view markdown-rendered'});const root=this.contentEl.createDiv();this.panel=new StudioPanel(root,{ui:obsidianUI(this.app),output:request=>this.printer.output(request),linuxPrint:process.platform==='linux',settings:this.plugin.studioSettings,save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),source:()=>new Promise((resolve,reject)=>{this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{try{resolve(await this.renderNote());}catch(e){reject(e instanceof Error?e:new Error(String(e)));}});})});}
+  onOpen(){
+    this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();
+    this.renderRoot=this.contentEl.createDiv({cls:'markdown-reading-view'}).createDiv({cls:'ps-render-source markdown-preview-view markdown-rendered'});
+    const root=this.contentEl.createDiv();
+    this.panel=new StudioPanel(root,{
+      ui:obsidianUI(this.app),output:request=>this.output(request),mobileOutput:!Platform.isDesktopApp,
+      exportFile:Platform.isDesktopApp?undefined:async(content,name)=>{
+        const file=await saveVaultExport(this.app.vault,name,content);new Notice(`Saved to ${file.path}`,8000);
+      },
+      linuxPrint:Platform.isDesktopApp && Platform.isLinux,settings:this.plugin.studioSettings,
+      save:s=>this.plugin.saveSettings(s),notify:m=>new Notice(m),
+      source:()=>new Promise((resolve,reject)=>{
+        this.renderQueue=this.renderQueue.catch(()=>{}).then(async()=>{
+          try{resolve(await this.renderNote());}catch(e){reject(e instanceof Error?e:new Error(String(e)));}
+        });
+      }),
+    });
+  }
   private async renderNote(){
     if(this.isClosed)throw new Error('Print preview was closed.');
     const view=this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -79,7 +112,7 @@ class PrintModal extends Modal {
       if(!f){missing++;continue;}
       try {const data=await this.app.vault.readBinary(f);if(data.byteLength>10_000_000){missing++;continue;}
         if(f.extension.toLowerCase()==='svg'){const clean=DOMPurify.sanitize(new TextDecoder().decode(data),{USE_PROFILES:{svg:true,svgFilters:true},FORBID_TAGS:['foreignObject','image','use','style'],FORBID_ATTR:['style']});img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(clean);}
-        else {const mime=f.extension.toLowerCase().replace('jpg','jpeg');img.src=`data:image/${mime};base64,${Buffer.from(data).toString('base64')}`;}
+        else {const mime=f.extension.toLowerCase().replace('jpg','jpeg');img.src=`data:image/${mime};base64,${arrayBufferToBase64(data)}`;}
       }catch{missing++;}
     }
     // Preserve task state while removing interactive controls from the print document.
@@ -89,5 +122,5 @@ class PrintModal extends Modal {
     const title=typeof metadata.title==='string'?metadata.title:this.file.basename;
     return {html:serializeRenderedNote(root,(tag)=>createEl(tag)),formatting:captureNoteFormatting(root,(tag)=>createEl(tag)),context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
   }
-  onClose(){this.isClosed=true;this.printDialog?.close();this.printer.dispose();this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
+  onClose(){this.isClosed=true;this.printer?.dispose();this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
 }

@@ -35,6 +35,14 @@ The directory scan can be previewed before a release with **Review branch** on t
 
 `src/content-css.ts` parses user CSS with CSS Tree, scopes each selector to note content, and allows only text, spacing and border declarations. At-rules, resource URLs, variables, generated content and layout/positioning properties are rejected. Unsupported CSS blocks export until corrected or disabled. The frame and exported document retain their network-blocking CSP, and style text is escaped during HTML serialization.
 
+## Mobile output and desktop isolation
+
+The manifest enables mobile installation. `src/main.ts` imports the desktop adapter only inside `Platform.isDesktopApp`. Its Electron, filesystem and CUPS dependencies are not evaluated on mobile; the production-bundle smoke test denies those modules and omits `process` and `Buffer`. Node-module lint exemptions are limited to these desktop modules. Vault images use Obsidian's `arrayBufferToBase64`.
+
+`src/mobile-printer.ts` loads the finished snapshot into an offscreen iframe with `sandbox="allow-same-origin"`, without permission to execute scripts. The snapshot retains its script- and network-blocking CSP. The pinned html2canvas 1.4.1 tree parser and canvas renderer read that inert document directly, avoiding its default `document.write` clone, which loses its origin on WebKit. They capture one page at a time at 2× resolution; PDF-Lib writes page images at the requested physical paper size. The interactive preview keeps its original opaque-origin sandbox. Mobile PDF generation has a timeout, releases canvases between pages and removes its frame on success, failure or closure.
+
+Mobile exports use `Vault.create`/`createBinary` inside **Print Studio Exports**, serialize concurrent saves, and never intentionally overwrite an existing export. No private native bridge, external service, network proxy or system file path is used. The mobile PDF is rasterized, so text selection and exact rendering of all CSS are not promised.
+
 ## Desktop printing
 
 `src/native-print.ts` uses Obsidian’s Electron remote bridge to load a finished snapshot in a hidden BrowserWindow. The window has Node integration disabled, context isolation and sandboxing enabled, and the snapshot retains a network-blocking CSP with scripts disabled. Links cannot open windows or navigate the print document. Images and fonts finish loading before output. The window and Blob URL are cleaned up on completion, failure, or studio close.

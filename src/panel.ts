@@ -17,6 +17,8 @@ export interface StudioHost {
   save(settings:Settings):Promise<void>;
   notify(message:string):void;
   linuxPrint?:boolean;
+  mobileOutput?:boolean;
+  exportFile?(content:string,filename:string,type:string):Promise<void>;
   output?(request:OutputRequest):Promise<void>;
 }
 
@@ -89,7 +91,7 @@ export class StudioPanel {
     const actions = this.el('div', 'ps-actions');
     host.ui.button(actions, 'Refresh note', () => void this.render(true), {icon: 'refresh-cw'});
     this.exportButton = host.ui.button(actions, 'Export HTML', () => this.frame.contentWindow?.postMessage({type:'export', token:this.token}, '*'), {tooltip:'Export pages as a self-contained HTML document'});
-    this.printButton = host.ui.button(actions, 'Print', () => this.requestOutput('print'), {tooltip:host.linuxPrint?'Choose a printer and print with the selected paper size':'Open the system print dialog'});
+    this.printButton = host.ui.button(actions, host.mobileOutput?'Open PDF':'Print', () => this.requestOutput('print'), {tooltip:host.mobileOutput?'Save a PDF in your vault and open it for sharing or printing':host.linuxPrint?'Choose a printer and print with the selected paper size':'Open the system print dialog'});
     this.pdfButton = host.ui.button(actions, 'Save PDF', () => this.requestOutput('pdf'), {primary:true,tooltip:'Save a PDF with the preview’s paper size and orientation'});
     this.pdfButton.classList.add('ps-primary');
     top.append(actions);
@@ -146,6 +148,7 @@ export class StudioPanel {
   }
   private safeFilename(name:string) {return name.replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,100)||'document';}
   private download(content:string, filename:string, type:string) {
+    if(this.host.exportFile){void this.host.exportFile(content,filename,type).catch(error=>this.host.notify(`Export failed: ${error instanceof Error?error.message:String(error)}`));return;}
     const url=URL.createObjectURL(new Blob([content],{type}));
     const link=this.el('a');link.href=url;link.download=filename;link.click();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -169,7 +172,7 @@ export class StudioPanel {
       }
       this.notes.append(details);
     }
-    this.notes.append(this.el('span','',`Save PDF uses ${this.preset.paper} ${this.preset.orientation} at actual size. ${this.host.linuxPrint?'Print uses this paper size and fits the document to the printer’s printable area. If printing a saved PDF elsewhere, select the same paper size.':'Print sends the same settings to your printer; check them if you change printers.'}`));
+    this.notes.append(this.el('span','',`Save PDF uses ${this.preset.paper} ${this.preset.orientation} at actual size. ${this.host.mobileOutput?'Mobile PDFs contain page images; text is not selectable. Files are saved in Print Studio Exports in your vault. Open the PDF, then use its file menu to share or print where supported.':this.host.linuxPrint?'Print uses this paper size and fits the document to the printer’s printable area. If printing a saved PDF elsewhere, select the same paper size.':'Print sends the same settings to your printer; check them if you change printers.'}`));
   }
   private requestOutput(kind:'pdf'|'print') {
     if(this.outputBusy || !this.pageCount || !this.token)return;

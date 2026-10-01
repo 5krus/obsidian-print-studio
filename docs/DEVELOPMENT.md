@@ -21,6 +21,15 @@ Browser/PDF checks require Chromium, Poppler (`pdfinfo`, `pdftotext`, `pdftoppm`
 CHROMIUM_PATH=/path/to/chromium npm run test:browser
 ```
 
+For the mobile output path, also run the WebKit suite (requires WebKit's platform libraries):
+
+```sh
+npx playwright install --with-deps webkit
+npx playwright test --config=playwright.mobile.config.ts
+```
+
+`npm run check` also evaluates the production plugin bundle with mobile platform flags and no Node or Electron APIs. Mobile browser checks inspect A4/Letter portrait/landscape PDF dimensions, page images, cleanup and narrow touch layouts. Test actual installation, vault exports, opening/sharing a PDF, logos, presets and closing during export on a Vision Pro before declaring device validation complete. WebKit on Linux does not reproduce Obsidian's native iOS file handling.
+
 Tests check pagination, text retention, paper dimensions, formatting, image conversion, HTML export and UI interactions. Generated outputs are stored in `test-results/` and are excluded from Git. Run browser and native suites separately on machines with limited memory.
 
 `npm run package` creates an installable development folder and local ZIP after running the checks. Published installer files are built and attested by the [release workflow](COMMUNITY_SUBMISSION.md).

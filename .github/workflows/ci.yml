@@ -28,13 +28,14 @@ jobs:
         run: npm run check
       - name: Install browser and PDF tools
         run: |
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
           sudo apt-get update
           sudo apt-get install -y poppler-utils ghostscript zip
       - name: Validate preview and PDF output
         run: |
           node scripts/build-tests.mjs
           npx playwright test
+          npx playwright test --config=playwright.mobile.config.ts
       - name: Package installable plugin
         run: |
           node scripts/notices.mjs
