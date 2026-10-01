@@ -1,5 +1,19 @@
 # Print Studio validation
 
+## Unreleased: whole-paragraph formatting and justification (#1)
+
+- Reproduced the lost middle-line font/color with nested inline spans. The original snapshot code also discarded justification when converting soft wraps to explicit breaks.
+- Snapshots now retain inline formatting ancestors. Justified lines preserve soft-wrap spacing, including page continuations, while explicit breaks and paragraph endings retain natural spacing. First-line indentation and print margins remain covered.
+- Lint, all **59 unit tests**, TypeScript/build, **four bundled PDF/desktop-boundary tests**, and packaging pass. The **42 browser/PDF tests** include glyph-position comparisons, long colored/highlighted paragraphs in both appearance modes, blank lines, page splits, zoomed export, independent HTML output, and PDF text/page-count checks.
+- **12 native PDFs** pass in Linux ARM64 Obsidian 1.13.7 with Fast Text Color 1.1.12, using a separate synthetic vault. Light/dark text and reading modes, classic appearance, and custom CSS were checked through Save PDF and captured Linux Print. All text markers survive, preview text stays within the margins, and matching output paths have identical extracted text. Native PDFs were also inspected visually.
+- Physical printer submission and Windows/macOS native dialogs were not tested. The reporter’s exact CSS/note was unavailable; the synthetic reproduction matches the visible formatting loss and exercises the actual Fast Text Color plugin.
+
+The screenshots below show the same synthetic content through the 0.4.1 snapshot function and the corrected function. They are browser captures, not personal notes.
+
+| Before | After |
+| --- | --- |
+| ![Middle lines lose their formatting and justification is lost](images/colored-paragraphs-before.png) | ![Formatting stays intact and wrapped lines retain justification](images/colored-paragraphs-after.png) |
+
 ## 0.4.1 review compliance with unchanged output
 
 - All **59 unit tests**, TypeScript/build, packaging, and **four additional PDF/desktop-boundary tests bundled with the production PDF-Lib source build** pass. The latter run automatically in `npm run check`.

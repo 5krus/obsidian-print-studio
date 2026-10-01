@@ -27,7 +27,7 @@ The directory scan can be previewed before a release with **Review branch** on t
 
 ## Isolated print runtime
 
-`src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. Obsidian’s globals remain unavailable. `src/print-structure.ts` constructs content and inert page-furniture templates in the host with Obsidian’s helpers. Only serialized HTML crosses the boundary; the frame receives no host functions or parent DOM access. `src/page-snapshot.ts` clones a prepared line break when freezing the finished export DOM.
+`src/frame.ts` runs inside an iframe with `sandbox="allow-scripts allow-modals"` and a network-blocking content security policy. Obsidian’s globals remain unavailable. `src/print-structure.ts` constructs content and inert page-furniture templates in the host with Obsidian’s helpers. Only serialized HTML crosses the boundary; the frame receives no host functions or parent DOM access. `src/page-snapshot.ts` clones prepared line-break and line-box templates when freezing the finished export DOM. Inline formatting ancestors are retained, and justified soft wraps are distinguished from explicit breaks and paragraph endings.
 
 ## Captured formatting and custom CSS
 

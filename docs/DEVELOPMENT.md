@@ -39,11 +39,11 @@ For an existing lab, replace only `main.js`, `manifest.json` and `styles.css` in
 
 ## Check the formatting output
 
-1. Open **Formatting study** in reading view. Confirm red bold text, blue italics, yellow highlights and Fast Text Color spans. The note’s `ftcTheme: default` exercises per-note theme selection.
+1. Open **Formatting study** in reading view. Confirm red bold text, blue italics, yellow highlights and Fast Text Color spans. The note’s `ftcTheme: default` exercises per-note theme selection. Its long red paragraph must keep its font and highlight on every line, including across a page boundary.
 2. Open Print Studio. Compare **Essential**, **Prototype — text**, **Prototype — reading** and **Prototype — custom**. These are synthetic lab presets, not installed user defaults.
 3. Save a PDF and export HTML for each. Open the saved files independently and compare the first page, a page boundary and the final page. The note contains **ROW-00** through **ROW-23**, followed by **END-OF-STUDY**; each must appear once.
 4. Check both Obsidian light and dark themes. Click **Refresh note** after changing a theme or snippet. Also test inline HTML styles, note `cssclasses`, embedded notes and images, A4/Letter and portrait/landscape.
-5. Test custom CSS on a paragraph and `.ps-content`: ordinary nested text should inherit it, while more specific accents remain where expected. Unsupported CSS such as `p { position: fixed; }` should show an inline error and block export until corrected or disabled.
+5. Test custom CSS on a paragraph and `.ps-content`: ordinary nested text should inherit it, while more specific accents remain where expected. Try `p { text-align: justify; text-indent: 12px; }`: wrapped lines should align to the margins, explicit breaks and the final paragraph line should keep natural spacing, and only the first line should be indented. Unsupported CSS such as `p { position: fixed; }` should show an inline error and block export until corrected or disabled.
 
 Inspect generated PDFs visually and test text selection/copying. Page counts may change with typography, margins and CSS. Physical printer submission is a separate manual check.
 

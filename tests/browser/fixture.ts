@@ -1,5 +1,5 @@
 import {captureNoteFormatting} from '../../src/note-formatting';
-import {formattingCss,formattingHtml} from '../formatting-fixture';
+import {formattingCss,formattingHtml,paragraphFormattingHtml} from '../formatting-fixture';
 import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml,inlineEmbeddedNote,embeddedFigureHtml} from '../fixtures';
 import {serializeRenderedNote} from '../../src/rendered-note';
 import {marked} from 'marked';
@@ -41,8 +41,9 @@ const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n
 const styleRoot=document.createElement('div');styleRoot.className='ps-render-source markdown-preview-view markdown-rendered formatting-test';
 if(query.has('formatting')) {
   const style=document.createElement('style');style.textContent=formattingCss;document.head.append(style);
-  styleRoot.innerHTML=formattingHtml;document.body.append(styleRoot);
+  styleRoot.innerHTML=query.has('paragraphs')?paragraphFormattingHtml:formattingHtml;document.body.append(styleRoot);
   preset.formatting=query.get('mode')==='reading'?'reading':query.get('mode')==='studio'?'studio':'text';
+  if(query.has('paragraphs')){preset.customCssEnabled=true;preset.customCss='p { text-align: justify; text-indent: 12px; }';}
 }
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{

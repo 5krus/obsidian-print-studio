@@ -42,5 +42,7 @@ export function printTemplates(createElement:ElementFactory):string {
   }
   const lineBreak=createElement('template');lineBreak.id='ps-line-break';
   lineBreak.content.append(createElement('br'));
-  return furniture.outerHTML+lineBreak.outerHTML;
+  const lineBox=createElement('template');lineBox.id='ps-line-box';
+  lineBox.content.append(createElement('span','ps-fixed-line'));
+  return furniture.outerHTML+lineBreak.outerHTML+lineBox.outerHTML;
 }

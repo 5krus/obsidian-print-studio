@@ -12,8 +12,21 @@ function endsWithBreak(node:Node):boolean {
   return false;
 }
 
-export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement):void {
-  const changes:Array<{block:HTMLElement;lines:DocumentFragment[]}>=[];
+function cloneLine(range:Range,block:HTMLElement):DocumentFragment {
+  const fragment=range.cloneContents();
+  // cloneContents omits the common ancestor. Middle lines wholly inside a
+  // styled span/link can therefore lose every inline formatting ancestor.
+  let ancestor=range.commonAncestorContainer;
+  if(ancestor.nodeType===3)ancestor=ancestor.parentNode!;
+  while(ancestor!==block) {
+    const wrapper=ancestor.cloneNode(false);wrapper.appendChild(fragment);
+    fragment.appendChild(wrapper);ancestor=ancestor.parentNode!;
+  }
+  return fragment;
+}
+
+export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement,lineBox:HTMLElement):void {
+  const changes:Array<{block:HTMLElement;lines:DocumentFragment[];justified:boolean}>=[];
   for(const page of pages) {
     for(const block of page.querySelectorAll<HTMLElement>(`.pagedjs_page_content :is(${textBlocks})`)) {
       // Keep media, preformatted text, and nested block layouts intact. Their
@@ -32,7 +45,7 @@ export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement):v
           let boundary=node;
           if(offset===0)while(boundary.parentNode!==block && !boundary.previousSibling)boundary=boundary.parentNode!;
           if(offset===0)line.setEndBefore(boundary);else line.setEnd(node,offset);
-          lines.push(line.cloneContents());
+          lines.push(cloneLine(line,block));
           if(offset===0)line.setStartBefore(boundary);else line.setStart(node,offset);
           bottom=-Infinity;
         }
@@ -52,17 +65,27 @@ export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement):v
         }
       }
       if(bottom===-Infinity)continue;
-      line.setEnd(block,block.childNodes.length);lines.push(line.cloneContents());
-      changes.push({block,lines});
+      line.setEnd(block,block.childNodes.length);lines.push(cloneLine(line,block));
+      changes.push({block,lines,justified:getComputedStyle(block).textAlign==='justify'});
     }
   }
   // Measure every block before changing any layout.
-  for(const {block,lines} of changes) {
+  for(const {block,lines,justified} of changes) {
     block.replaceChildren();block.classList.add('ps-fixed-lines');
     lines.forEach((line,index)=>{
       const explicitBreak=endsWithBreak(line);
-      block.append(line);
-      if(index<lines.length-1 && !explicitBreak)block.append(lineBreak.cloneNode());
+      if(justified) {
+        // A hard <br> turns a wrapped line into a last line for CSS alignment.
+        // Give soft wraps their own justified line box, while preserving the
+        // natural last-line spacing at explicit breaks and paragraph ends.
+        // A paragraph continued on the next page still ends in a soft wrap.
+        const box=lineBox.cloneNode(false) as HTMLElement;
+        if(!explicitBreak && (index<lines.length-1 || block.hasAttribute('data-split-to')))box.classList.add('ps-justify-line');
+        box.append(line);block.append(box);
+      } else {
+        block.append(line);
+        if(index<lines.length-1 && !explicitBreak)block.append(lineBreak.cloneNode());
+      }
     });
   }
   for(const page of pages)for(const content of page.querySelectorAll<HTMLElement>('.pagedjs_page_content')) {

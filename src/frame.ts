@@ -15,6 +15,7 @@ async function run() {
   // Capture trusted templates before paginating note content with arbitrary IDs.
   const furniture=document.querySelector<HTMLTemplateElement>('body > #ps-page-furniture')!.content;
   const lineBreak=document.querySelector<HTMLTemplateElement>('body > #ps-line-break')!.content.firstElementChild as HTMLBRElement;
+  const lineBox=document.querySelector<HTMLTemplateElement>('body > #ps-line-box')!.content.firstElementChild as HTMLElement;
   await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
   const previewer=new Previewer();
   // Paged.js 0.4.3 normally waits for animation frames between pages. Electron
@@ -56,7 +57,7 @@ async function run() {
   });
   await Promise.all([...document.images].map(img=>img.decode().catch(()=>{})));
   await document.fonts.ready;
-  freezePageContent(all,lineBreak);
+  freezePageContent(all,lineBreak,lineBox);
   // Move only into unused space after pagination, without changing page count
   // or splitting a fitting cover. Oversized sections retain normal pagination.
   for(const page of all) {
@@ -101,7 +102,7 @@ async function run() {
     if(message.type==='export' || message.type==='pdf' || message.type==='print'){
       // Export at actual size, regardless of the current preview magnification.
       const clone=document.documentElement.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('script,body > template#ps-page-furniture,body > template#ps-line-break').forEach(element=>element.remove());
+      clone.querySelectorAll('script,body > template#ps-page-furniture,body > template#ps-line-break,body > template#ps-line-box').forEach(element=>element.remove());
       // A legal CSS string can contain </style>. Escape it before serializing
       // style text as HTML so a font name or selector cannot inject markup.
       clone.querySelectorAll('style').forEach(style=>{style.textContent=(style.textContent??'').replace(/</g,'\\3c ');});

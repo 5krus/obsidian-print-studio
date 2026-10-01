@@ -37,8 +37,8 @@ try {
       // Start each case from the same built-in layout, regardless of lab edits.
       const identity={id:preset.id,name:preset.name};
       Object.assign(preset,require(fixture).formattingDefaults().presets.find(p=>p.id==='minimal'),identity);
-      preset.formatting=mode==='custom'?'text':mode;preset.customCssEnabled=mode==='custom';
-      preset.customCss=mode==='custom'?'strong {color:#cc00cc} .ftc-color-default-blue {background-color:#a5f3fc}':'';
+      preset.formatting=mode==='custom'?'text':mode;preset.customCssEnabled=mode!=='studio';
+      preset.customCss='p {text-align:justify; text-indent:12px}'+(mode==='custom'?'strong {color:#cc00cc} .ftc-color-default-blue {background-color:#a5f3fc}':'');
       // Fix every slot so prior lab edits and today's date cannot change the
       // reference output while comparing renderer/library builds.
       preset.header={left:'Native formatting check',center:'',right:''};
@@ -60,6 +60,28 @@ try {
       assert.equal(await frame.getByText('FTC-BLUE-CHECK',{exact:true}).evaluate(el=>getComputedStyle(el).color),'rgb(0, 0, 255)');
       assert.equal(await frame.getByText('HIGHLIGHT-CHECK',{exact:true}).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(254, 240, 138)');
     }
+    if(mode!=='studio') {
+      const result=await frame.locator('.pagedjs_page_content p').evaluateAll(paragraphs=>{
+        const colored=paragraphs.filter(p=>p.textContent.includes('Long colored paragraphs'));
+        const errors=[];let words=0;
+        for(const paragraph of colored) {
+          const bounds=paragraph.closest('.pagedjs_page_content').getBoundingClientRect();
+          const walker=document.createTreeWalker(paragraph,NodeFilter.SHOW_TEXT),range=document.createRange();
+          let node;
+          while((node=walker.nextNode())) {
+            if(!node.textContent.trim())continue;
+            words+=node.textContent.trim().split(/\s+/u).length;
+            const style=getComputedStyle(node.parentElement);
+            if(style.color!=='rgb(255, 0, 0)' || !style.fontFamily.includes('Times New Roman'))errors.push('Lost FTC style');
+            range.selectNodeContents(node);
+            for(const rect of range.getClientRects())if(rect.left<bounds.left-1 || rect.right>bounds.right+1 || rect.bottom>bounds.bottom+1)errors.push('Text outside print margins');
+          }
+        }
+        return {words,errors};
+      });
+      assert.ok(result.words>300,'The whole FTC paragraph must render');assert.deepEqual(result.errors,[]);
+      await frame.locator('.pagedjs_page').first().screenshot({path:`${prefix}-preview.png`});
+    }
     const pages=await frame.locator('.pagedjs_page').count();
     await page.getByRole('button',{name:'Save PDF',exact:true}).click();
     await page.waitForFunction(()=>window.formattingResult,undefined,{timeout:90_000});
@@ -68,7 +90,7 @@ try {
       const info=execFileSync('pdfinfo',[path],{encoding:'utf8'});assert.equal(Number(info.match(/Pages:\s+(\d+)/)[1]),pages);
       const text=execFileSync('pdftotext',['-layout',path,'-'],{encoding:'utf8'});
       assert.ok(!text.includes('ftcTheme:') && !text.includes('cssclasses:'),'Frontmatter must not print');
-      for(const marker of ['BOLD-CHECK','ITALIC-CHECK','HIGHLIGHT-CHECK','FTC-RED-CHECK','FTC-BLUE-CHECK','INLINE-CHECK','END-OF-STUDY'])assert.ok(text.includes(marker),`${path}: missing ${marker}`);
+      for(const marker of ['BOLD-CHECK','ITALIC-CHECK','HIGHLIGHT-CHECK','FTC-RED-CHECK','FTC-BLUE-CHECK','INLINE-CHECK','FTC-LONG-START','FTC-LONG-END','END-OF-STUDY'])assert.ok(text.includes(marker),`${path}: missing ${marker}`);
       for(let i=0;i<24;i++)assert.equal(text.match(new RegExp(`ROW-${String(i).padStart(2,'0')}`,'g'))?.length,1);
       const size=info.match(/Page size:\s+([\d.]+) x ([\d.]+)/);assert.ok(Math.abs(Number(size[1])-595.28)<1 && Math.abs(Number(size[2])-841.89)<1);
     }
