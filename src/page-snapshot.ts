@@ -36,10 +36,15 @@ export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement,li
       const glyph=doc.createRange(),line=doc.createRange();line.setStart(block,0);
       const lines:DocumentFragment[]=[];
       let bottom=-Infinity,node:Node|null;
-      const measure=(node:Node,offset:number,rect:DOMRect)=>{
+      const measure=(node:Node,offset:number,rect:DOMRect,lineHeight:number)=>{
         if(!rect.width || !rect.height)return;
+        // Font bounds can be taller than the line spacing (e.g. Reem Kufi).
+        // Trim that excess leading before comparing lines, otherwise adjacent
+        // glyph boxes overlap and the whole paragraph becomes one frozen line.
+        const inset=Number.isFinite(lineHeight) && lineHeight>0?Math.max(0,(rect.height-lineHeight)/2):0;
+        const top=rect.top+inset,nextBottom=rect.bottom-inset;
         // Superscripts/subscripts overlap the ordinary glyphs on their line.
-        if(bottom!==-Infinity && rect.top>=bottom-.5) {
+        if(bottom!==-Infinity && top>=bottom-.5) {
           // A boundary before an inline element must not clone an empty copy
           // onto the preceding line (especially sub/sup, which affect height).
           let boundary=node;
@@ -49,18 +54,19 @@ export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement,li
           if(offset===0)line.setStartBefore(boundary);else line.setStart(node,offset);
           bottom=-Infinity;
         }
-        bottom=Math.max(bottom,rect.bottom);
+        bottom=Math.max(bottom,nextBottom);
       };
       while((node=walker.nextNode())) {
+        const lineHeight=parseFloat(getComputedStyle(node.parentElement!).lineHeight);
         for(const word of (node.textContent??'').matchAll(/\S+/gu)) {
           const start=word.index,end=start+word[0].length;
           glyph.setStart(node,start);glyph.setEnd(node,end);
           const rects=[...glyph.getClientRects()].filter(rect=>rect.width && rect.height);
-          if(rects.length===1)measure(node,start,rects[0]);
+          if(rects.length===1)measure(node,start,rects[0],lineHeight);
           else for(let offset=start;offset<end;offset++) {
             // Long URLs and scripts without spaces can wrap within a word.
             glyph.setStart(node,offset);glyph.setEnd(node,offset+1);
-            measure(node,offset,glyph.getBoundingClientRect());
+            measure(node,offset,glyph.getBoundingClientRect(),lineHeight);
           }
         }
       }

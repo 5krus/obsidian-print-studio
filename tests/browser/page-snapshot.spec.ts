@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
 
 const setup=async(page:import('@playwright/test').Page,body:string)=>{
   await page.setContent(body);await page.addScriptTag({path:'build/snapshot-test.js'});
@@ -19,6 +20,48 @@ function words(root:HTMLElement) {
   }
   return result;
 }
+
+for(const alignment of ['left','justify'])for(const lineHeight of [1.2,1.4])test(`Reem Kufi keeps ${alignment} paragraphs wrapped at ${lineHeight} line spacing`,async({page,browser},info)=>{
+  // Unmodified Google Fonts fixture: google/fonts/ofl/reemkufi/ReemKufi[wght].ttf.
+  // The accompanying OFL-ReemKufi.txt permits redistribution with these tests.
+  const font=(await readFile('tests/support/fonts/ReemKufi.ttf')).toString('base64');
+  const text='Blue text in Reem Kufi must retain its wrapping and formatting. '.repeat(5)+'FINAL-WORD.';
+  // Separate inline nodes also exercise line breaks at formatting boundaries.
+  await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p style="text-align:${alignment};font:18px/${lineHeight} 'Reem Kufi';color:blue">${text.split(' ').map(word=>`<span>${word} </span>`).join('')}</p></div></div>`);
+  await page.addStyleTag({content:`@font-face{font-family:'Reem Kufi';src:url(data:font/ttf;base64,${font})}`});
+  await page.evaluate(()=>document.fonts.ready);
+  expect(await page.evaluate(()=>[...document.fonts].some(font=>font.family==='Reem Kufi' && font.status==='loaded'))).toBe(true);
+  const block=page.locator('p'),before=await block.evaluate(words);
+  const lineCount=new Set(before.map(word=>word.y)).size;
+  expect(lineCount).toBeGreaterThan(4);
+  await page.screenshot({path:info.outputPath('reem-kufi-before.png')});
+  await page.evaluate(()=>window.freezeSnapshot());
+  await page.screenshot({path:info.outputPath('reem-kufi-after.png')});
+  const after=await block.evaluate(words);
+  expect(new Set(after.map(word=>word.y)).size).toBe(lineCount);
+  expect(after.map(({text,color,font})=>({text,color,font}))).toEqual(before.map(({text,color,font})=>({text,color,font})));
+  after.forEach((word,index)=>{expect(Math.abs(word.x-before[index].x)).toBeLessThan(1);expect(Math.abs(word.y-before[index].y)).toBeLessThan(1);});
+  const output=await browser.newPage();await output.setContent(await page.content());await output.evaluate(()=>document.fonts.ready);
+  expect(await output.locator('p').evaluate(words)).toEqual(after);
+  const pdf=info.outputPath('reem-kufi.pdf');await output.pdf({path:pdf,printBackground:true});
+  const printed=execFileSync('pdftotext',['-layout',pdf,'-'],{encoding:'utf8'});
+  expect(printed.replace(/\s/g,'')).toBe(text.replace(/\s/g,''));
+  expect(printed.trim().split('\n').filter(line=>line.trim()).length).toBe(lineCount);
+  await output.close();
+});
+
+for(const family of ['sans-serif','serif','monospace'])for(const alignment of ['left','justify'])test(`${family}: overlapping font bounds preserve ${alignment} line breaks`,async({page})=>{
+  await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p style="font:18px/.9 ${family};text-align:${alignment}"><span>${'Every font must keep its original lines even when font bounds overlap. '.repeat(5)}</span></p></div></div>`);
+  const block=page.locator('p'),before=await block.evaluate(words);
+  const lines=[...new Set(before.map(word=>word.y))];
+  expect(lines.length).toBeGreaterThan(4);
+  // Ensure this exercises the failure condition with whichever font is installed.
+  expect(await block.evaluate(p=>{const range=document.createRange();range.selectNodeContents(p.querySelector('span')!);const rects=[...range.getClientRects()];return rects[0].bottom>rects[1].top;})).toBe(true);
+  await page.evaluate(()=>window.freezeSnapshot());
+  const after=await block.evaluate(words);
+  expect(after.map(word=>word.text)).toEqual(before.map(word=>word.text));
+  after.forEach((word,index)=>{expect(Math.abs(word.x-before[index].x)).toBeLessThan(1);expect(Math.abs(word.y-before[index].y)).toBeLessThan(1);});
+});
 
 test('whole-paragraph inline formatting survives every frozen line',async({page},info)=>{
   await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content"><p><span class="ftc-colored" style="color:#e90064;background-color:#f8e7ed;font:18px/1.5 Georgia,serif"><em>${'Long colored paragraphs must retain the same formatting on every wrapped line. '.repeat(7)}</em></span></p></div></div>`);
@@ -87,7 +130,7 @@ test('finished line breaks survive a new output window without losing the final 
 
 test('freezing preserves explicit and blank lines, inline styles, Unicode, nested lists, tables and media',async({page})=>{
   await setup(page,`<div class="pagedjs_page"><div class="pagedjs_page_content">
-    <p>Explicit line<br><br>Blank line remains<br>${'A long styled paragraph with '.repeat(8)}<em>emphasis</em>, <a href="https://example.com">a link</a>, sub<sub>script</sub> and super<sup>script</sup>, café — 日本語 😀.</p>
+    <p>Explicit line<br><br>Blank line remains<br>${'A long styled paragraph with '.repeat(8)}<em>emphasis</em>, <a href="https://example.com">a link</a>, sub<sub style="line-height:0">two words</sub> and super<sup style="line-height:0">two words</sup>, café — 日本語 😀.</p>
     <p>https://example.com/${'long-path'.repeat(35)} ${'日本語'.repeat(40)}</p>
     <ul><li><p>${'Nested list paragraph survives wrapping. '.repeat(8)}</p><ul><li>Child item</li></ul></li></ul>
     <table><tbody><tr><td>${'Cell text survives wrapping. '.repeat(8)}</td><td>Another cell</td></tr></tbody></table>
@@ -99,7 +142,7 @@ test('freezing preserves explicit and blank lines, inline styles, Unicode, neste
   expect(after.text).toBe(before.text);expect(after.pre).toBe(before.pre);expect(after.media).toBe(before.media);
   after.paragraphs.forEach((h,i)=>expect(Math.abs(h-before.paragraphs[i])).toBeLessThan(1));
   await expect(page.locator('em')).toHaveText('emphasis');await expect(page.locator('a')).toHaveAttribute('href','https://example.com');
-  await expect(page.locator('sub')).toHaveText('script');await expect(page.locator('sup')).toHaveText('script');
+  await expect(page.locator('sub')).toHaveText('two words');await expect(page.locator('sup')).toHaveText('two words');
   await expect(page.locator('td').first()).toHaveClass('ps-fixed-lines');
   expect(await page.locator('li').first().evaluate(e=>e.classList.contains('ps-fixed-lines'))).toBe(false);
 });
