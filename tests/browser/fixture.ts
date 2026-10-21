@@ -8,6 +8,7 @@ import {StudioPanel} from '../../src/panel';
 import {defaults} from '../../src/settings';
 import {prepareMarkdown} from '../../src/template';
 import {browserUI} from '../support/ui';
+import {tocCss,tocHtml} from '../toc-fixture';
 const query=new URLSearchParams(location.search);
 const embedRoot=document.createElement('div');embedRoot.innerHTML=embeddedNoteHtml;
 const embedHtml=serializeRenderedNote(inlineEmbeddedNote(embedRoot),browserUI.createElement);
@@ -45,9 +46,10 @@ const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n
 const styleRoot=document.createElement('div');styleRoot.className='ps-render-source markdown-preview-view markdown-rendered formatting-test';
 if(query.has('formatting')) {
   const style=document.createElement('style');style.textContent=formattingCss;document.head.append(style);
-  styleRoot.innerHTML=query.has('paragraphs')?paragraphFormattingHtml:formattingHtml;document.body.append(styleRoot);
+  styleRoot.innerHTML=query.has('toc')?tocHtml:query.has('paragraphs')?paragraphFormattingHtml:formattingHtml;document.body.append(styleRoot);
   preset.formatting=query.get('mode')==='reading'?'reading':query.get('mode')==='studio'?'studio':'text';
   if(query.has('paragraphs')){preset.customCssEnabled=true;preset.customCss='p { text-align: justify; text-indent: 12px; }';}
+  if(query.has('toc')){preset.customCssEnabled=true;preset.customCss=tocCss;}
 }
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{

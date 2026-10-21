@@ -45,7 +45,29 @@ CSS affects the note body, including its headings; it does not change page heade
 p { margin-bottom: 1em; }
 ```
 
-Text, spacing and border properties are supported. Use literal colours and installed fonts. Page rules, `@media`, `@import`, CSS variables, resource URLs, positioning, display and generated content are unsupported. `!important` is ignored; selector specificity and rule order decide which styles win.
+Text, spacing, borders, white-space and flex layouts are supported. Supported `display` values are `block`, `inline`, `inline-block`, `flex` and `inline-flex`. Use literal colours and installed fonts. Page rules, `@media`, `@import`, CSS variables, resource URLs and positioning are unsupported. `!important` is ignored; selector specificity and rule order decide which styles win.
+
+Empty `::before` and `::after` decorations are supported with `content: ""`; generated text, counters and other pseudo-elements are unsupported. For a table of contents, this CSS works both as an Obsidian snippet and in **Print CSS**:
+
+```css
+.toc-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+.toc-line::after {
+  content: "";
+  flex: 1;
+  order: 1;
+  border-bottom: 1px dotted currentColor;
+}
+.toc-line > :last-child {
+  order: 2;
+  white-space: nowrap;
+}
+```
+
+Use two spans per row, for example `<div class="toc-line"><span>Introduction</span><span>3</span></div>`. Page numbers are entered manually. Enable this CSS in the print preset as well as the Obsidian snippet: the appearance modes capture text styles, not flex layouts or pseudo-elements.
 
 If a rule is unsupported, an inline message explains the problem. Correct it, disable custom CSS or use **Undo change** to resume exporting.
 

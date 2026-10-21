@@ -389,7 +389,7 @@ export class StudioPanel {
 
     const css=this.section('Custom CSS');
     this.toggle(css,'Enable custom CSS','customCssEnabled','Apply these rules to note content in this preset, after the selected appearance.');
-    const cssRow=this.row(css,'Print CSS','Use text, spacing and border properties. Selectors target the note body; .ps-content targets its root. Use literal colors and installed fonts. @ rules, CSS variables and generated content are unsupported.',true);
+    const cssRow=this.row(css,'Print CSS','Use text, spacing, border and flex styles. Empty ::before and ::after decorations are supported. Selectors target the note body; .ps-content targets its root. Use literal colors and installed fonts. @ rules, CSS variables and generated text are unsupported.',true);
     const cssInput=this.host.ui.text(cssRow.control,this.preset.customCss,true) as HTMLTextAreaElement;
     this.describe(cssInput,cssRow);cssInput.maxLength=MAX_CUSTOM_CSS;cssInput.rows=9;cssInput.spellcheck=false;cssInput.classList.add('ps-css-input');
     cssInput.placeholder='strong { color: #b42318; }\nem { color: #175cd3; }\nmark { background-color: #fef08a; }';

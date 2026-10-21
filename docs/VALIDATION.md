@@ -1,5 +1,13 @@
 # Print Studio validation
 
+## 0.4.6 dotted contents lines and flex layouts
+
+- Lint, 62 unit tests, TypeScript/build, four production-bundled PDF/desktop tests, and the mobile bundle smoke pass.
+- All 62 Chromium browser/PDF tests pass. The new contents fixture uses 72 rows across multiple pages, alternating paragraph and div containers, with wrapped titles and manually entered page numbers. Studio, preserved text and reading appearance retain the original two children per row, dotted leaders, right-aligned numbers, page bounds and every title in PDF output.
+- Native Linux Obsidian preview was checked with an existing preset and the unchanged CSS snippet. The preview completes successfully, and the dotted leaders and page-number alignment were inspected visually. Generated synthetic PDFs were also rasterized and inspected.
+- Existing rejection tests continue to cover resource loading, CSS variables, positioning and generated text. Pseudo-elements are scoped outside `:is()` and restricted to final `::before` / `::after` decorations with empty content.
+- Physical printer submission and physical mobile devices were not tested for this change.
+
 ## 0.4.4 consistent table columns
 
 - Reproduced a two- and three-column table layout difference between Chromium and WebKit with identical content and presets. Native automatic table sizing compressed the label columns differently; freezing line breaks could change column widths again.

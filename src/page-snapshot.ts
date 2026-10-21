@@ -31,7 +31,11 @@ export function freezePageContent(pages:HTMLElement[],lineBreak:HTMLBRElement,li
     for(const block of page.querySelectorAll<HTMLElement>(`.pagedjs_page_content :is(${textBlocks})`)) {
       // Keep media, preformatted text, and nested block layouts intact. Their
       // individual text blocks are considered separately by the outer traversal.
-      if(block.querySelector(nestedBlocks) || !['normal','nowrap','pre-line'].includes(getComputedStyle(block).whiteSpace))continue;
+      const style=getComputedStyle(block);
+      if(block.querySelector(nestedBlocks) || !['normal','nowrap','pre-line'].includes(style.whiteSpace))continue;
+      // Flex items and their order must survive intact; inserting frozen line
+      // wrappers or breaks would change the layout and :last-child selectors.
+      if([block,...block.querySelectorAll<HTMLElement>('*')].some(element=>['flex','inline-flex'].includes(getComputedStyle(element).display)))continue;
       const doc=block.ownerDocument,walker=doc.createTreeWalker(block,NodeFilter.SHOW_TEXT);
       const glyph=doc.createRange(),line=doc.createRange();line.setStart(block,0);
       const lines:DocumentFragment[]=[];

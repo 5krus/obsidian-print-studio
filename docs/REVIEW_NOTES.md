@@ -33,7 +33,7 @@ The directory scan can be previewed before a release with **Review branch** on t
 
 `src/note-formatting.ts` captures computed text styles from an offscreen Obsidian render into a detached clone; it does not rewrite the source note. Captured inline declarations pass a finite text-property allowlist and become declaration maps. Font scaling, inheritance and background defaults are applied to those maps before serialization into export CSS; they do not style the plugin interface.
 
-`src/content-css.ts` parses user CSS with CSS Tree, scopes each selector to note content, and allows only text, spacing and border declarations. At-rules, resource URLs, variables, generated content and layout/positioning properties are rejected. Unsupported CSS blocks export until corrected or disabled. The frame and exported document retain their network-blocking CSP, and style text is escaped during HTML serialization.
+`src/content-css.ts` parses user CSS with CSS Tree and scopes each selector to note content. It allows text, spacing, borders, white-space and flex declarations, with a finite set of display values. Final `::before` and `::after` decorations are scoped outside `:is()` and only empty, `none` or `normal` content is allowed. At-rules, resource URLs, variables, generated text, other pseudo-elements and positioning are rejected. Unsupported CSS blocks export until corrected or disabled. The frame and exported document retain their network-blocking CSP, and style text is escaped during HTML serialization.
 
 ## Mobile output and desktop isolation
 
