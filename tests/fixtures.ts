@@ -65,6 +65,15 @@ export function inlineEmbeddedNote(root:HTMLElement):HTMLElement {
   return root;
 }
 
+export const printHideHtml=`<h1 class="print-hide">HIDDEN-FIRST-HEADING</h1>
+<h1>Visible heading</h1><p>Keep <span class="print-hide">HIDDEN-INLINE</span>this.</p>
+<div class="print-hide"><p>HIDDEN-BLOCK</p><span class="print-hide">HIDDEN-NESTED</span><div class="ps-page-break"></div></div>
+<img class="print-hide" src="https://example.com/private.png" alt="HIDDEN-IMAGE">
+<input class="print-hide" type="checkbox" checked>
+<div class="markdown-embed"><div class="markdown-embed-content print-hide"><p>HIDDEN-EMBED-CONTENT</p></div></div>
+<div class="markdown-embed"><div class="markdown-preview-view print-hide"><p>HIDDEN-EMBED-PREVIEW</p></div><p>Visible embed</p></div>
+<p class="print-hide-extra">Visible similar class</p><p>Visible footer</p>`;
+
 // Long native note embeds used to lose a large figure and the remaining
 // body when Paged.js resumed through Obsidian's nested preview containers.
 export function embeddedFigureHtml(image:string):string {

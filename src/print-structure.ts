@@ -3,11 +3,7 @@ import type {Preset} from './settings';
 import {noteCssClasses} from './note-formatting';
 
 /** Prepare document structure with the host's Obsidian element factory. */
-/** Content marked with this class appears in Obsidian but is left out of every printed output. */
-export const PRINT_HIDE_CLASS='print-hide';
-
 export function preparePrintRoot(root:HTMLElement,preset:Preset,cssclasses:unknown,createElement:ElementFactory):void {
-  root.querySelectorAll(`.${PRINT_HIDE_CLASS}`).forEach(element=>element.remove());
   root.className='ps-content markdown-rendered markdown-preview-view';
   root.classList.add(...noteCssClasses(cssclasses));
   if(preset.headingBreaks)[...root.querySelectorAll('h1')].slice(1).forEach(heading=>heading.classList.add('ps-heading-break'));

@@ -1,6 +1,6 @@
 import {captureNoteFormatting} from '../../src/note-formatting';
 import {formattingCss,formattingHtml,paragraphFormattingHtml} from '../formatting-fixture';
-import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml,inlineEmbeddedNote,embeddedFigureHtml} from '../fixtures';
+import {validationMarkdown,TEST_IMAGE,embeddedNoteHtml,inlineEmbeddedNote,embeddedFigureHtml,printHideHtml} from '../fixtures';
 import {serializeRenderedNote} from '../../src/rendered-note';
 import {marked} from 'marked';
 import {MobilePrinter} from '../../src/mobile-printer';
@@ -44,6 +44,11 @@ if(query.has('uppercase')) {
 }
 const markdown=query.has('cover')?`${query.has('top')?'TOP-ANCHOR\n\n':''}&&&&\n\n# COVER-TITLE\n\n${query.has('longCover')?Array.from({length:45},(_,i)=>`COVER-ROW-${i} ${'Cover content. '.repeat(15)}\n\n`).join(''):''}Cover subtitle\n\n&&&&\n\nCOVER-AUTHOR${query.has('noBreak')?'':'\n\n====\n\n# BODY-START\n\nBody content.'}`:query.has('overflow')?'<h1>Oversized row</h1><table><tr><td>'+Array.from({length:100},(_,i)=>`Line ${i}<br>`).join('')+'</td></tr></table>':validationMarkdown(preset.logo);
 const styleRoot=document.createElement('div');styleRoot.className='ps-render-source markdown-preview-view markdown-rendered formatting-test';
+if(query.has('printHide')) {
+  styleRoot.innerHTML=printHideHtml;document.body.append(styleRoot);
+  preset.formatting=query.get('mode')==='reading'?'reading':query.get('mode')==='text'?'text':'studio';
+  preset.headingBreaks=true;
+}
 if(query.has('formatting')) {
   const style=document.createElement('style');style.textContent=formattingCss;document.head.append(style);
   styleRoot.innerHTML=query.has('toc')?tocHtml:query.has('paragraphs')?paragraphFormattingHtml:formattingHtml;document.body.append(styleRoot);
@@ -54,7 +59,7 @@ if(query.has('formatting')) {
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,mobileOutput:query.has('mobile'),
-  source:async()=>{window.testReads++;return {formatting:query.has('formatting')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('tables')?tableHtml:query.has('formatting')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;return {formatting:query.has('formatting') || query.has('printHide')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('tables')?tableHtml:query.has('formatting') || query.has('printHide')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   output:async request=>{window.testOutput=request;if(query.has('mobile')){const printer=new MobilePrinter(document.body,browserUI.createElement,async (data,title,open)=>{window.testMobilePDF=Array.from(data);window.testMobileSaved={title,open};});try{const output=printer.output(request);if(query.has('cancelMobile'))printer.dispose();await output;}finally{printer.dispose();}}},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},

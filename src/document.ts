@@ -5,11 +5,14 @@ import {escapeHtml, type DocumentContext} from './template';
 import {compileContentCss, filterTextStyle} from './content-css';
 import {noteFormattingCss, type NoteFormatting} from './note-formatting';
 import {preparePrintRoot,printTemplates} from './print-structure';
+import {removePrintHiddenContent} from './print-visibility';
 export interface PrintJob {html:string; preset:Preset; context:DocumentContext; formatting?:NoteFormatting; contentCss?:string}
 function cleanRoot(html: string, createElement: ElementFactory, hideEmbeddedNoteMetadata = false, preserveFormatting=false): HTMLElement {
   const clean = DOMPurify.sanitize(html, {RETURN_DOM_FRAGMENT:true, USE_PROFILES:{html:true,svg:true,svgFilters:true}, ADD_ATTR:['xmlns'], ADD_FORBID_CONTENTS:['button'], FORBID_TAGS:['style','button','iframe','object','embed','video','audio','form'], FORBID_ATTR:preserveFormatting?['srcset']:['style','srcset']});
   const root = createElement('div');
   root.append(clean);
+  // Filter before placeholders replace elements or embed wrappers are unwrapped.
+  removePrintHiddenContent(root);
   if(preserveFormatting)for(const element of root.querySelectorAll<HTMLElement>('[style]')) {
     const safe=createElement('span');filterTextStyle(element.style,safe.style);
     element.removeAttribute('style');if(safe.style.cssText)element.setAttribute('style',safe.style.cssText);

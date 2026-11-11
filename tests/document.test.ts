@@ -3,13 +3,22 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {browserUI} from './support/ui';
 import {defaults} from '../src/settings';
-import {embeddedNoteHtml} from './fixtures';
+import {embeddedNoteHtml,printHideHtml} from './fixtures';
 const dom=new JSDOM('<!doctype html><body></body>');
 Object.assign(globalThis,{window:dom.window,document:dom.window.document,FRAME_RUNTIME:'/* bundled runtime */'});
 const documentModule=await import('../src/document');
 const {pageCss}=documentModule;
 const cleanMarkup=(html: string)=>documentModule.cleanMarkup(html, browserUI.createElement);
 const frameDocument=(job: Parameters<typeof documentModule.frameDocument>[0], token: string)=>documentModule.frameDocument(job, token, browserUI.createElement);
+for(const formatting of ['studio','text','reading'] as const) {
+  test(`print-hide survives cleanup and formatting in ${formatting} mode`,()=>{
+    const preset={...defaults().presets[0],formatting,headingBreaks:true};
+    const output=frameDocument({html:printHideHtml,formatting:{html:printHideHtml,rootStyle:'font-size:16px'},preset,context:{title:'Test',vault:'Test',date:'Today',metadata:{}}},'test');
+    const job=JSON.parse(output.match(/window.PRINT_STUDIO_JOB=(.*?);<\/script>/)![1]);
+    assert.doesNotMatch(job.html,/HIDDEN-|ps-image-placeholder|ps-check|ps-heading-break|ps-page-break/);
+    for(const text of ['Visible heading','Keep this.','Visible embed','Visible similar class','Visible footer'])assert.ok(job.html.includes(text),text);
+  });
+}
 test('print HTML preserves rich content while removing scripts and active embeds',()=>{
   const html=cleanMarkup('<h1>Title</h1><table><tr><td>A</td></tr></table><blockquote>Quote</blockquote><script>alert(1)</script><img src="https://example.com/pixel" onerror="alert(1)" alt="Chart"><iframe src="https://example.com"></iframe><a href="javascript:alert(1)">Bad link</a><p style="position:fixed">Text</p>');
   assert.match(html,/<table>/);assert.match(html,/<blockquote>/);assert.match(html,/\[Image: Chart\]/);assert.doesNotMatch(html,/<script|<iframe|onerror|javascript:|style=|https:\/\/example.com/);

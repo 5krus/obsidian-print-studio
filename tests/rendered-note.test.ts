@@ -9,6 +9,21 @@ const doc=dom.window.document;
 const create=<K extends keyof HTMLElementTagNameMap>(tag:K)=>doc.createElement(tag);
 const parse=(html:string)=>{const root=create('div');root.innerHTML=html;return root;};
 
+test('hidden inline ancestors are removed before block embeds are moved out of paragraphs',()=>{
+  for(const tag of ['p','span'] as const) {
+    const source=inlineEmbeddedNote(parse(embeddedNoteHtml));
+    const paragraph=source.querySelector('p .markdown-embed')!.closest('p')!;
+    const hidden=tag==='p'?paragraph:create('span');
+    if(tag==='span'){hidden.append(...paragraph.childNodes);paragraph.append(hidden);}
+    hidden.classList.add('print-hide');
+    const original=source.innerHTML;
+    const rendered=serializeRenderedNote(source,create);
+    assert.doesNotMatch(rendered,/Generated embed title|Embedded body heading|Nested body survives/);
+    assert.match(rendered,/End of main document/);
+    assert.equal(source.innerHTML,original);
+  }
+});
+
 test('native span embeds retain their title, frontmatter and body scope across HTML parsing',()=>{
   const source=inlineEmbeddedNote(parse(embeddedNoteHtml));
   const original=source.innerHTML;
