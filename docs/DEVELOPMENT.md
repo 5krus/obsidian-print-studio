@@ -84,6 +84,17 @@ These CDP validators require a vault named `print-studio-lab`. The formatting va
 
 Windows/macOS dialogs and physical printing remain manual checks. Keep their status explicit in the validation report.
 
+## Verify Dataview inline queries
+
+Create a separate vault named `print-studio-dataview-lab`, install and enable Dataview and the current Print Studio build, and open it in a separate Obsidian profile with `--remote-debugging-port=9228`. Then run:
+
+```sh
+npm run build
+node scripts/validate-dataview-native.mjs
+```
+
+The validator refuses other vault names. It creates synthetic notes, temporarily changes Dataview settings, installs the current build in that test vault, and checks the reported `Sample Salve · v2` heading, expressions, nested values, dates, custom prefixes, disabled queries and embedded-note context. It captures native PDF/print output and screenshots under `test-results/dataview-native/`; no physical print job is sent. Set `PRINT_STUDIO_BASELINE_BUNDLE` to an older `main.js` to also capture the broken preview before the fix. `PRINT_STUDIO_CDP_URL` overrides the debugging endpoint. Other operating systems and mobile devices still require native testing.
+
 ## Documentation screenshots
 
 Images in the user docs come from the released plugin in an isolated Obsidian vault, using a synthetic study note. Capture the actual controls and preview; use cropped screenshots for small interactions such as the preset menu. Keep examples free of personal vault content and wait for **Ready to print** before capture.

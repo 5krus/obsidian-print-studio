@@ -97,6 +97,7 @@ If printing a saved PDF from another app, choose the matching A4/Letter paper an
 | Clipped header or footer | Follow the preview warning; shorten the text or increase the top/bottom margin. |
 | Missing images | Use vault attachments. Remote, missing or oversized images (over 10 MB) become placeholders. |
 | A complex embed or plugin block looks different | Check a simpler example; not all dynamic layouts are supported. |
+| Dataview inline queries are still showing as code | Enable Dataview and its inline queries, then use **Refresh note**. Print Studio uses Dataview to resolve expressions such as `=this.name`; a warning appears if they do not finish within three seconds. |
 
 Physical printer output and Windows/macOS print dialogs have not been verified. See the [validation report](VALIDATION.md) for coverage.
 

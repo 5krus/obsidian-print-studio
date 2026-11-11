@@ -17,7 +17,7 @@ class Plugin extends Component {
 const obsidian={Plugin,Component,Modal,PluginSettingTab:Component,
   Platform:{isDesktopApp:false,isMobileApp:true,isIosApp:true}};
 const module={exports:{}};
-runInNewContext(await readFile('main.js','utf8'),{module,exports:module.exports,console,setTimeout,clearTimeout,structuredClone,
+runInNewContext(await readFile('main.js','utf8'),{module,exports:module.exports,console,setTimeout,clearTimeout,structuredClone,AbortController,
   createEl:()=>{throw new Error('Reached mobile DOM renderer');},
   require:id=>{
     calls.push(id);
