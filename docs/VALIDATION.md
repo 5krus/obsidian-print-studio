@@ -1,5 +1,19 @@
 # Print Studio validation
 
+## 0.4.7 Mermaid, Dataview and screen-only content
+
+- The [0.4.7 release workflow](https://github.com/5krus/obsidian-print-studio/actions/runs/42950153187) passed lint, **83 unit tests**, TypeScript/build, **four production-bundled PDF/desktop tests**, and the mobile bundle smoke check at commit `c25b9526a4ed98e5107840b0ab34ee712f663d72`.
+- All **75 Chromium browser/PDF tests** and **10 WebKit mobile/table tests** passed. The three desktop-only Mermaid PDF cases are intentionally skipped in WebKit; their corresponding mobile cases run there. Mermaid regressions inspect actual PDF pixels for node backgrounds, HTML/SVG labels, connecting lines and arrowheads, and check HTML/Print output consistency.
+- Native Linux ARM64 Obsidian **1.13.7** checks used separate synthetic vaults. The reported eight-node Mermaid flowchart and a base-theme/classDef example retained labels and styling in light/dark themes, all three appearance modes, preview and native PDF/captured Print output. Native PDFs were rasterized and visually inspected.
+- Native Dataview **0.5.68** checks covered the reported heading, expressions, nested values, dates, configured prefixes, disabled queries and embedded-note context. Preview, HTML snapshots and native PDF/captured Print output retained the resolved values across all three appearance modes.
+- `print-hide` regressions cover preview, HTML, PDF and Print in all three appearance modes, including removal before destructive transformations and preservation of the original source DOM.
+- The published `main.js`, `manifest.json` and `styles.css` matched the local verified build byte for byte. Their signed attestations were verified against the release workflow and exact source commit before publication.
+- Native Windows/macOS Obsidian, physical mobile devices and physical printer submission remain **untested**. Chromium/WebKit automation and captured Print PDFs do not establish native dialog or physical-device compatibility.
+
+### Remaining native Windows check
+
+Use a separate Windows vault with the released **0.4.7** installer files, enable Print Studio and Mermaid, and copy `tests/native/fixtures/mermaid-study.md` into it. Check the reported flowchart and custom-theme diagram in light/dark themes and all three appearance modes, then compare preview, saved PDF and independently opened HTML. Confirm labels, node colors, borders, connecting lines and arrowheads. Exercise the native Print dialog with the selected paper size and orientation; record physical printing separately. Record the Windows and Obsidian versions and the observed results here when this check is completed.
+
 ## 0.4.6 dotted contents lines and flex layouts
 
 - Lint, 62 unit tests, TypeScript/build, four production-bundled PDF/desktop tests, and the mobile bundle smoke pass.
