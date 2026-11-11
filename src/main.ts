@@ -14,6 +14,7 @@ import {serializeRenderedNote} from './rendered-note';
 import {removePrintHiddenContent} from './print-visibility';
 import {captureNoteFormatting, noteCssClasses} from './note-formatting';
 import {dataviewSourcePath,settleDataviewInline} from './dataview-inline';
+import {snapshotMermaid} from './mermaid-snapshot';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
   private studios=new Set<PrintModal>();
@@ -116,6 +117,7 @@ class PrintModal extends Modal {
         (link,origin)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),origin)?.path),
     }});
     if(this.isClosed)throw new Error('Print preview was closed.');
+    snapshotMermaid(root,(tag,cls)=>createEl(tag,{cls}));
     const warnings:string[]=[];
     if(pendingInline)warnings.push('Some Dataview inline queries did not finish rendering. Check the preview and refresh the note before exporting.');
     const noteResource=this.app.vault.getResourcePath(this.file);

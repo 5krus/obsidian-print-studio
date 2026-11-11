@@ -95,6 +95,17 @@ node scripts/validate-dataview-native.mjs
 
 The validator refuses other vault names. It creates synthetic notes, temporarily changes Dataview settings, installs the current build in that test vault, and checks the reported `Sample Salve · v2` heading, expressions, nested values, dates, custom prefixes, disabled queries and embedded-note context. It captures native PDF/print output and screenshots under `test-results/dataview-native/`; no physical print job is sent. Set `PRINT_STUDIO_BASELINE_BUNDLE` to an older `main.js` to also capture the broken preview before the fix. `PRINT_STUDIO_CDP_URL` overrides the debugging endpoint. Other operating systems and mobile devices still require native testing.
 
+## Verify Mermaid diagrams
+
+Create a separate vault named `print-studio-mermaid-lab`, install and enable Print Studio, and allow Mermaid diagrams in that vault. Open it in a separate Obsidian profile with `--remote-debugging-port=9229`, then run:
+
+```sh
+npm run build
+node scripts/validate-mermaid-native.mjs
+```
+
+The validator installs the current build in that test vault and creates the issue #3 flowchart plus a custom theme/classDef example. It captures light/dark previews and native PDF/print output in all three appearance modes under `test-results/mermaid-native/`. Inspect the rasterized PDF pages for labels, borders, arrowheads and edge labels; no physical print job is sent. `PRINT_STUDIO_CDP_URL` overrides the debugging endpoint. Browser tests also check exported pixels through Chromium desktop/mobile and WebKit mobile paths. Windows/macOS and physical devices still require native testing.
+
 ## Documentation screenshots
 
 Images in the user docs come from the released plugin in an isolated Obsidian vault, using a synthetic study note. Capture the actual controls and preview; use cropped screenshots for small interactions such as the preset menu. Keep examples free of personal vault content and wait for **Ready to print** before capture.

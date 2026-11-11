@@ -1,3 +1,4 @@
+import {mermaidSource} from './mermaid-fixture';
 import {dataviewSource} from './dataview-fixture';
 import {captureNoteFormatting} from '../../src/note-formatting';
 import {formattingCss,formattingHtml,paragraphFormattingHtml} from '../formatting-fixture';
@@ -29,7 +30,7 @@ preset.footer.left='PRINT-CHECK FOOTER';
 preset.footer.center='{{company}}';
 preset.footer.right='{{page}} / {{pages}}';
 preset.logo=TEST_IMAGE;
-if(query.has('dataview'))preset.formatting=query.get('mode')==='reading'?'reading':query.get('mode')==='text'?'text':'studio';
+if(query.has('dataview') || query.has('mermaid'))preset.formatting=query.get('mode')==='reading'?'reading':query.get('mode')==='text'?'text':'studio';
 if(query.has('tables')){preset.fontSize=9;preset.marginSide=15;}
 if(query.has('figure')){preset.fontSize=9;preset.lineHeight=1.55;preset.marginTop=27;preset.marginBottom=27;preset.marginSide=15;preset.hideEmbeddedNoteMetadata=true;}
 if(query.has('firstPage')) {
@@ -61,7 +62,7 @@ if(query.has('formatting')) {
 window.testReads=0;
 const panel=new StudioPanel(document.querySelector('#studio')!,{
   ui:browserUI,settings,mobileOutput:query.has('mobile'),
-  source:async()=>{window.testReads++;if(query.has('dataview'))return dataviewSource(query.has('disabled'));return {formatting:query.has('formatting') || query.has('printHide')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('tables')?tableHtml:query.has('formatting') || query.has('printHide')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
+  source:async()=>{window.testReads++;if(query.has('mermaid'))return mermaidSource();if(query.has('dataview'))return dataviewSource(query.has('disabled'));return {formatting:query.has('formatting') || query.has('printHide')?captureNoteFormatting(styleRoot,browserUI.createElement):undefined,html:query.has('tables')?tableHtml:query.has('formatting') || query.has('printHide')?styleRoot.innerHTML:query.has('figure')?figureHtml:query.has('embeds')?embedHtml:await marked.parse(prepareMarkdown(query.has('uppercase')?'# Example\n\nMixed case body stays unchanged.\n\n====\n\nSecond page.':markdown)),context:{title:query.has('uppercase')?'Example':'Print validation',vault:'Test vault',date:'13 Sep 2026',metadata:{client:'Acme'}},warnings:[]};},
   output:async request=>{window.testOutput=request;if(query.has('mobile')){const printer=new MobilePrinter(document.body,browserUI.createElement,async (data,title,open)=>{window.testMobilePDF=Array.from(data);window.testMobileSaved={title,open};});try{const output=printer.output(request);if(query.has('cancelMobile'))printer.dispose();await output;}finally{printer.dispose();}}},
   save:async settings=>{window.testSaved=settings;},
   notify:message=>{window.testNotices.push(message);},
