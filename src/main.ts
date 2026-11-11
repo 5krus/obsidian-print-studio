@@ -13,7 +13,7 @@ import {resolveVaultImage} from './attachments';
 import {serializeRenderedNote} from './rendered-note';
 import {removePrintHiddenContent} from './print-visibility';
 import {captureNoteFormatting, noteCssClasses} from './note-formatting';
-import {settleDataviewInline} from './dataview-inline';
+import {dataviewSourcePath,settleDataviewInline} from './dataview-inline';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
   private studios=new Set<PrintModal>();
@@ -70,6 +70,7 @@ class PrintModal extends Modal {
   private renderQueue=Promise.resolve();
   private renderComponent?:Component;
   private isClosed=false;
+  private renderAbort=new AbortController();
   constructor(private plugin:PrintStudioPlugin,private file:TFile,private closed:()=>void){super(plugin.app);}
   onOpen(){
     this.modalEl.addClass('ps-modal');this.setTitle('Print Studio');this.titleEl.addClass('ps-modal-title');this.component.load();
@@ -107,11 +108,16 @@ class PrintModal extends Modal {
     // This is the dedicated print render, not the editor or reading-view DOM.
     // Omit hidden images before attachment reads, warnings and checkbox conversion.
     removePrintHiddenContent(root);
-    // Dataview fills inline fields after render resolves; wait so they are not printed as raw code.
+    // Resolve inline queries before capturing styles, attachments and the print snapshot.
     const dataview=(this.app as unknown as {plugins?:{plugins?:Record<string,unknown>}}).plugins?.plugins?.['dataview'] as Parameters<typeof settleDataviewInline>[1];
-    await settleDataviewInline(root,dataview,metadata,(tag,cls)=>createEl(tag,{cls}));
+    const pendingInline=await settleDataviewInline(root,dataview,{signal:this.renderAbort.signal,render:{
+      component:this.renderComponent,createElement:(tag,cls)=>createEl(tag,{cls}),
+      sourcePathFor:code=>dataviewSourcePath(code,root,this.file.path,
+        (link,origin)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),origin)?.path),
+    }});
     if(this.isClosed)throw new Error('Print preview was closed.');
     const warnings:string[]=[];
+    if(pendingInline)warnings.push('Some Dataview inline queries did not finish rendering. Check the preview and refresh the note before exporting.');
     const noteResource=this.app.vault.getResourcePath(this.file);
     const lookup={byPath:(path:string)=>this.app.vault.getFileByPath(path),byLink:(link:string)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),this.file.path)};
     let missing=0;
@@ -131,5 +137,5 @@ class PrintModal extends Modal {
     const title=typeof metadata.title==='string'?metadata.title:this.file.basename;
     return {html:serializeRenderedNote(root,(tag)=>createEl(tag)),formatting:captureNoteFormatting(root,(tag)=>createEl(tag)),context:{title,vault:this.app.vault.getName(),date:new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date()),metadata},warnings};
   }
-  onClose(){this.isClosed=true;this.printer?.dispose();this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
+  onClose(){this.isClosed=true;this.renderAbort.abort();this.printer?.dispose();this.panel?.dispose();this.component.unload();this.contentEl.empty();this.closed();}
 }
