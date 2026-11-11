@@ -50,6 +50,8 @@ Print Studio works locally, with no accounts, telemetry or cloud service. Preset
 
 On Linux, printing uses the system’s `lpstat` and `lp` programs to list printers and submit your job, without a command shell. [Details for reviewers →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/REVIEW_NOTES.md)
 
+To keep something in your note but out of the printout, give it the `print-hide` class — for example `<span class="print-hide">internal note</span>`.
+
 Complex embeds and plugin layouts may look different; check the preview before exporting. [Help with layout and printing →](https://github.com/5krus/obsidian-print-studio/blob/main/docs/GUIDE.md)
 
 [Report a problem](https://github.com/5krus/obsidian-print-studio/issues) · [Contribute](https://github.com/5krus/obsidian-print-studio/blob/main/CONTRIBUTING.md) · [Developer docs](https://github.com/5krus/obsidian-print-studio/blob/main/docs/DEVELOPMENT.md) · [MIT license](https://github.com/5krus/obsidian-print-studio/blob/main/LICENSE)

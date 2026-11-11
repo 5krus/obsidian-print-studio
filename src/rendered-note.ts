@@ -1,8 +1,11 @@
 import type {ElementFactory} from './ui';
+import {removePrintHiddenContent} from './print-visibility';
 
 /** Preserve block note embeds when Obsidian's live DOM is serialized as HTML. */
 export function serializeRenderedNote(source:HTMLElement, createElement:ElementFactory):string {
   const root=source.cloneNode(true) as HTMLElement;
+  // Keep embeds from escaping a hidden ancestor when paragraphs are split below.
+  removePrintHiddenContent(root);
   // Obsidian can render div/pre/p children inside a span inside a paragraph.
   // An HTML parser moves those children outside the span, losing embed scope.
   for(const embed of root.querySelectorAll('span.markdown-embed')) {

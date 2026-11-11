@@ -11,6 +11,7 @@ import {prepareMarkdown} from './template';
 import DOMPurify from 'dompurify';
 import {resolveVaultImage} from './attachments';
 import {serializeRenderedNote} from './rendered-note';
+import {removePrintHiddenContent} from './print-visibility';
 import {captureNoteFormatting, noteCssClasses} from './note-formatting';
 export default class PrintStudioPlugin extends Plugin {
   studioSettings!:Settings;
@@ -102,6 +103,9 @@ class PrintModal extends Modal {
     await MarkdownRenderer.render(this.app,prepareMarkdown(markdown,true),root,this.file.path,this.renderComponent);
     if(this.isClosed)throw new Error('Print preview was closed.');
     root.querySelectorAll(':scope > .frontmatter,:scope > .frontmatter-container').forEach(element=>element.remove());
+    // This is the dedicated print render, not the editor or reading-view DOM.
+    // Omit hidden images before attachment reads, warnings and checkbox conversion.
+    removePrintHiddenContent(root);
     const warnings:string[]=[];
     const noteResource=this.app.vault.getResourcePath(this.file);
     const lookup={byPath:(path:string)=>this.app.vault.getFileByPath(path),byLink:(link:string)=>this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link),this.file.path)};
